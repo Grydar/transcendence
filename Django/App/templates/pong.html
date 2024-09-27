@@ -1,3 +1,5 @@
+<!-- Django/App/templates/pong.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,11 +14,20 @@
             margin: 0 auto;
             background: black;
         }
+        body {
+            text-align: center;
+            background-color: #282c34;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
-    <h1 style="text-align: center;">Pong Game</h1>
+    <h1>Pong Game - Room: {{ room_name }}</h1>
     <canvas id="pong" width="800" height="600"></canvas>
+    <script>
+        const ROOM_NAME = "{{ room_name }}";
+    </script>
     <script src="{% static 'js/pong.js' %}"></script>
 </body>
 </html>
