@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build:
+      context: ./Django
+    volumes:
+      - ./Django:/app  # Maps your local Django project to the container
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://your_db_user:your_password@db:5432/pong_db
+
+  nginx:
+    build:
+      context: ./Nginx
+    ports:
+      - "8001:80"
+    depends_on:
+      - app
+
+volumes:
+  postgres_data:

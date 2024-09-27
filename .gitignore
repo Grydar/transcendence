@@ -1,0 +1,59 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+
+# Media/static files
+media/
+static/
+
+# Environments
+.env
+
+# Docker specific
+docker-compose.override.yml
+postgres_data/
+
+# Virtual environment
+venv/
+.env/
+
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+*.mo
+
+# VSCode settings (if you're using VSCode)
+.vscode/
+
+# macOS files
+.DS_Store
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Migrations
+*/migrations/*
+
+# PyTest
+.pytest_cache/
+
+# JetBrains specific files
+.idea/
