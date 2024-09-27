@@ -79,7 +79,7 @@ DATABASES = {
         'NAME': 'db',
         'USER': 'admin',
         'PASSWORD': 'admin',
-        'HOST': 'db',  # Name of the Postgres service in Docker
+        'HOST': 'db',
         'PORT': '5432',
     }
 }

@@ -20,7 +20,7 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgres://your_db_user:your_password@db:5432/pong_db
+      - DATABASE_URL=postgres://admin:admin@db:5432/db
 
   nginx:
     build:
