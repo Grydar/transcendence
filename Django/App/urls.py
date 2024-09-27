@@ -16,7 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('pong/', views.pong_view, name='pong'),  # Your existing pong route
+    path('', views.pong_view),  # Add this line to serve pong view on the root URL
 ]

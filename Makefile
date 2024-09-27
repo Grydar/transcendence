@@ -1,4 +1,4 @@
-all: up
+all: build
 
 up:
 	docker-compose up -d

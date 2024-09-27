@@ -14,7 +14,7 @@ services:
     build:
       context: ./Django
     volumes:
-      - ./Django:/app  # Maps your local Django project to the container
+      - ./Django:/app
     ports:
       - "8000:8000"
     depends_on:
