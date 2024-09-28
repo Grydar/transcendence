@@ -13,9 +13,17 @@ let playerSpeed = 6;
 let ballX = canvas.width / 2, ballY = canvas.height / 2;
 let ballSpeedX = 5, ballSpeedY = 5;
 
+// Scores des joueurs
+let player1Score = 0;
+let player2Score = 0;
+const winningScore = 11;
+
 // Contrôles des joueurs
 let upPressed = false, downPressed = false;
 let wPressed = false, sPressed = false;
+
+// Variable pour suivre l'état de la partie
+let gameOver = false;
 
 // Dessiner les raquettes
 function drawPaddle(x, y) {
@@ -40,6 +48,24 @@ function drawNet() {
     ctx.lineTo(canvas.width / 2, canvas.height);
     ctx.strokeStyle = "#fff";
     ctx.stroke();
+}
+
+// Afficher le score
+function drawScore() {
+    ctx.font = "32px Arial";
+    ctx.fillStyle = "#fff";
+    ctx.fillText(player1Score, canvas.width / 4, 50);
+    ctx.fillText(player2Score, 3 * canvas.width / 4, 50);
+}
+
+// Afficher le message de victoire
+function drawWinner(winner) {
+    ctx.font = "48px Arial";
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "center";
+    ctx.fillText(winner + " a gagné !", canvas.width / 2, canvas.height / 2 - 20);
+    ctx.font = "24px Arial";
+    ctx.fillText("Appuyez sur R pour rejouer", canvas.width / 2, canvas.height / 2 + 30);
 }
 
 // Gérer le déplacement des raquettes
@@ -77,11 +103,36 @@ function ballWallCollision() {
     if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) {
         ballSpeedY = -ballSpeedY;
     }
-    if (ballX + ballRadius > canvas.width || ballX - ballRadius < 0) {
-        // Remet la balle au centre après avoir atteint un mur
-        ballX = canvas.width / 2;
-        ballY = canvas.height / 2;
-        ballSpeedX = -ballSpeedX;
+    if (ballX + ballRadius > canvas.width) {
+        // Le joueur 1 marque un point
+        player1Score++;
+        resetBall();
+        checkWinCondition();
+    }
+    if (ballX - ballRadius < 0) {
+        // Le joueur 2 marque un point
+        player2Score++;
+        resetBall();
+        checkWinCondition();
+    }
+}
+
+// Remettre la balle au centre après un point
+function resetBall() {
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+    ballSpeedX = -ballSpeedX;  // Change de direction après un point
+    ballSpeedY = 5 * (Math.random() > 0.5 ? 1 : -1);  // Variation de la direction verticale
+}
+
+// Vérifier si un joueur a gagné
+function checkWinCondition() {
+    if (player1Score >= winningScore) {
+        gameOver = true;
+        drawWinner("Joueur 1");
+    } else if (player2Score >= winningScore) {
+        gameOver = true;
+        drawWinner("Joueur 2");
     }
 }
 
@@ -93,11 +144,14 @@ function moveBall() {
 
 // Mettre à jour le canvas
 function update() {
+    if (gameOver) return; // Arrêter la mise à jour si la partie est finie
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);  // Effacer le canvas
     drawNet();
     drawPaddle(0, player1Y);                           // Raquette gauche (joueur 1)
     drawPaddle(canvas.width - paddleWidth, player2Y);  // Raquette droite (joueur 2)
     drawBall();
+    drawScore();                                       // Afficher les scores
 
     movePaddles();
     moveBall();
@@ -119,6 +173,10 @@ document.addEventListener("keydown", function(e) {
     } else if (e.key == "s") {
         sPressed = true;
     }
+    // Relancer la partie après la victoire en appuyant sur R
+    if (e.key == "r" || e.key == "R") {
+        if (gameOver) resetGame();
+    }
 });
 
 document.addEventListener("keyup", function(e) {
@@ -133,6 +191,15 @@ document.addEventListener("keyup", function(e) {
         sPressed = false;
     }
 });
+
+// Réinitialiser la partie après la victoire
+function resetGame() {
+    player1Score = 0;
+    player2Score = 0;
+    gameOver = false;
+    resetBall();
+    update(); // Redémarrer la boucle de jeu
+}
 
 // Lancer le jeu
 update();
