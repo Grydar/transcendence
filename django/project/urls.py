@@ -22,5 +22,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 	path('', include('pong.urls')),
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
-	re_path(r'^(?!api/).*$', TemplateView.as_view(template_name='index.html')),
+	re_path(r'^(?!api/).*$', TemplateView.as_view(template_name='home.html')),
 ]

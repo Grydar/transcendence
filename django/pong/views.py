@@ -1,13 +1,14 @@
-from django.shortcuts import render, redirect
-from django.urls import reverse
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 import uuid
 
-# def home_view(request):
-#     return render(request, 'home.html')  # Create a simple home page with options to create or join a game
+class CreateGameView(APIView):
+    def get(self, request, format=None):
+        room_name = str(uuid.uuid4())[:8]  # Generate a unique room name
+        return Response({'room_name': room_name}, status=status.HTTP_201_CREATED)
 
-def create_game_view(request):
-    room_name = str(uuid.uuid4())[:8]  # Generate a unique 8-character room name
-    return redirect(reverse('pong_game', args=[room_name]))
-
-def pong_game_view(request, room_name):
-    return render(request, 'pong.html', {'room_name': room_name})
+class PongGameView(APIView):
+    def get(self, request, room_name, format=None):
+        # Send the room_name in a JSON response
+        return Response({'room_name': room_name})
