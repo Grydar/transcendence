@@ -18,8 +18,8 @@ clean: down
 fclean: down
 	docker system prune -a -f
 
-re : fclean all
+re: fclean all
 
-r : down up
+r: down up
 
 PHONY: all up build migrate down clean fclean re r

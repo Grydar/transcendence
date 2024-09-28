@@ -3,6 +3,3 @@ psycopg2-binary>=2.9
 djangorestframework
 djangorestframework-simplejwt
 psycopg2>=2.9
-channels
-channels-redis
-daphne
