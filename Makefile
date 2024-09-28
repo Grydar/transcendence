@@ -20,4 +20,6 @@ fclean: down
 
 re : fclean all
 
-PHONY: all up build migrate down clean fclean re
+r : down up
+
+PHONY: all up build migrate down clean fclean re r

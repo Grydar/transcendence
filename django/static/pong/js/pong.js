@@ -151,12 +151,12 @@ function update() {
     drawPaddle(0, player1Y);                           // Raquette gauche (joueur 1)
     drawPaddle(canvas.width - paddleWidth, player2Y);  // Raquette droite (joueur 2)
     drawBall();
-    drawScore();                                       // Afficher les scores
-
+    
     movePaddles();
     moveBall();
     ballPaddleCollision();
     ballWallCollision();
+    drawScore();                                       // Afficher les scores
 
     requestAnimationFrame(update);
 }
