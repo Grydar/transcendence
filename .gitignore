@@ -13,7 +13,7 @@ __pycache__/
 
 # Media/static files
 media/
-static/
+#static/
 
 # Environments
 .env
