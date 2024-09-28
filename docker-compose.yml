@@ -12,9 +12,9 @@ services:
 
   app:
     build:
-      context: ./Django
+      context: ./django
     volumes:
-      - ./Django:/app
+      - ./django:/app
     ports:
       - "8000:8000"
     depends_on:
@@ -30,7 +30,7 @@ services:
 
   nginx:
     build:
-      context: ./Nginx
+      context: ./nginx
     ports:
       - "8001:80"
     depends_on:
