@@ -1,0 +1,17 @@
+FROM python:3.12.6
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the requirements file and install dependencies
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Copy the project files
+COPY . .
+
+# Expose the port the app runs on
+EXPOSE 8000
+
+# Command to run the application
+CMD ["./wait-for-it.sh", "db:5432", "-t", "60", "--", "python", "manage.py", "runserver", "0.0.0.0:8000"]
