@@ -19,14 +19,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
-      - redis
     environment:
       - DATABASE_URL=postgres://admin:admin@db:5432/db
-
-  redis:
-    image: redis:6
-    ports:
-      - "6379:6379"
 
   nginx:
     build:
