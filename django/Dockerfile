@@ -1,17 +1,17 @@
 FROM python:3.12.6
 
-# Set the working directory
-WORKDIR /app
+WORKDIR /django
 
-# Copy the requirements file and install dependencies
+RUN apt-get update -y && apt-get upgrade -y && \
+	apt-get install -y postgresql-client wget unzip
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-
-# Copy the project files
+	
 COPY . .
 
-# Expose the port the app runs on
+RUN chmod +x /django/launch.sh
+
 EXPOSE 8000
 
-# Command to run the application
-CMD ["./wait-for-it.sh", "db:5432", "-t", "60", "--", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD [ "/bin/bash", "/django/launch.sh" ]

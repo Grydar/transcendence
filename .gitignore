@@ -57,3 +57,4 @@ htmlcov/
 
 # JetBrains specific files
 .idea/
+.data

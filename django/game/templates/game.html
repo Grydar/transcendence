@@ -1,0 +1,30 @@
+{% extends 'home.html' %}
+{% load static %}
+
+{% block title %}
+    Game
+{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'game/styles.css' %}">
+{% endblock %}
+
+{% block script %}
+
+<script>
+    const user = '{{ user.username|escapejs }}';  // Use username or any identifier
+    const party_id = '{{ party_id|escapejs }}';
+    const submitResultUrl = "{% url 'submit_game_result' %}";
+</script>
+
+<script src="{% static 'game/pong.js' %}" defer></script>
+
+{% endblock %}
+
+{% block body %}
+
+<div id="scene-box">
+    <canvas id="game" width="800" height="600"></canvas>
+</div>
+
+{% endblock %}

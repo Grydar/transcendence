@@ -1,0 +1,46 @@
+{% extends 'home.html' %}
+{% load static %}
+
+{% block title %}
+    Lobby
+{% endblock %}
+
+{% block script %}
+{% endblock %}
+
+{% block body %}
+
+<div>
+    <p>
+        Lobby menu
+    </p>
+</div>
+<div>
+    <form method="post" action="{% url 'lobby' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Create Party</button>
+    </form>
+</div>
+<div>
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Number of Players</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for party in parties %}
+            <tr>
+                <th scope="row">{{ party.id }}</th>
+                <td>{{ party.nbPlayer }}</td>
+                <td><a href="{% url 'game' party.id %}">JOIN</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
