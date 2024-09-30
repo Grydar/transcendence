@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{% static 'game/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
 {% endblock %}
 
 {% block script %}
@@ -17,7 +17,7 @@
     const submitResultUrl = "{% url 'submit_game_result' %}";
 </script>
 
-<script src="{% static 'game/pong.js' %}" defer></script>
+<script src="{% static 'pong.js' %}" defer></script>
 
 {% endblock %}
 
