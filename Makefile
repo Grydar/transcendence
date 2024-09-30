@@ -10,7 +10,7 @@ migrate:
 	python3 manage.py migrate
 
 down:
-	docker-compose down -v
+	docker compose down
 
 clean: down
 	docker rmi -f $$(docker images -q)

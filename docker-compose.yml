@@ -21,8 +21,6 @@ services:
     depends_on:
       - db
     env_file: django/.env
-    volumes:
-      - django-code:/django
     restart: unless-stopped
     
   nginx:
@@ -34,15 +32,4 @@ services:
       - django
   
 volumes:
-  django-code:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: "${PWD}/django"
   db-data:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: "${PWD}/data/db"

@@ -75,10 +75,6 @@ def login_v(request) -> HttpResponse:
             login(request, user)
             context['request'] = request
             return render(request, 'welcome.html', context)
-            if 'next' in request.POST:
-                return redirect(request.POST.get('next'))
-            else:
-                return redirect('home:welcome')
     else: # GET request
         form = AuthenticationForm()
     context['form'] = form
