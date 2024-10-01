@@ -18,11 +18,11 @@ def lobby(request):
     else:
         form = CreatePartyForm()
     parties = Party.objects.all()
-    return render(request, 'lobby.html', {'form': form, 'parties': parties})
+    return render(request, 'game/lobby.html', {'form': form, 'parties': parties})
 
 def game(request, party_id):
     party = get_object_or_404(Party, id=party_id)
-    return render(request, 'game.html', {
+    return render(request, 'game/game.html', {
         'party_id': party_id,
         'user': request.user
     })

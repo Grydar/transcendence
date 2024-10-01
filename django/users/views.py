@@ -74,7 +74,7 @@ def login_v(request) -> HttpResponse:
             user.profile.active = True
             login(request, user)
             context['request'] = request
-            return render(request, 'welcome.html', context)
+            return render(request, 'home/welcome.html', context)
     else: # GET request
         form = AuthenticationForm()
     context['form'] = form
