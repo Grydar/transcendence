@@ -1,3 +1,6 @@
+import os
+from urllib.parse import urlencode
+from dotenv import load_dotenv
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from .forms import UserRegisterForm, UserUpdateForm, ProfileUpdateForm
@@ -11,35 +14,37 @@ from django.contrib import messages
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, HttpResponseBadRequest
-from dotenv import load_dotenv
-from django.conf import settings
-import json
 from django.urls import reverse
 from django.template.loader import render_to_string
 from render_block import render_block_to_string
 from django.middleware.csrf import get_token
 
-# get acces to environment variables
+# Load environment variables
 load_dotenv()
 
-authorize_uri = "https://api.intra.42.fr/oauth/authorize?\
-	client_id=u-s4t2ud-c6b234d3edfab001ec93a17143651dcef4184d26390c68e82a5d64bd4ea6686e\
-	&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fusers%2Fcallback%2F\
-	&scope=public\
-	&response_type=code\
-	&state="
+CLIENT_ID = os.getenv('CLIENT_ID')
+CLIENT_SECRET = os.getenv('CLIENT_SECRET')
+REDIRECT_URI = 'http://localhost:8000/users/callback/'
 
-# identify from which page oauth2 was invoked
+# Define the FROMLOGIN and FROMSIGNUP variables
 FROMLOGIN = 'd56b699830e77ba53855679cb1d252da'
 FROMSIGNUP = '7d2abf2d0fa7c3a0c13236910f30bc43'
 
-""""
-sign-up: create your account
-"""
+def build_authorize_uri(state_value):
+    params = {
+        'client_id': CLIENT_ID,
+        'redirect_uri': REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'public',
+        'state': state_value
+    }
+    return f"https://api.intra.42.fr/oauth/authorize?{urlencode(params)}"
+
+# Update your views to use the new build_authorize_uri function
 @require_http_methods(['GET', 'POST'])
 def signup_v(request) -> HttpResponse:
     context = {
-        'authorize_uri': authorize_uri+FROMSIGNUP,
+        'authorize_uri': build_authorize_uri(FROMSIGNUP),
         'show_alerts': True,
         'request': request
     }
@@ -47,9 +52,8 @@ def signup_v(request) -> HttpResponse:
         form = UserRegisterForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Your account has been created! You are now able to log in.')
+            messages.success(request, 'Your account has been created! You are now able to log in.')
             context['form'] = AuthenticationForm()
-            # must sent whole page otherwise csrf issue
             return render(request, 'users/login.html', context)
     else:
         form = UserRegisterForm()
@@ -57,13 +61,10 @@ def signup_v(request) -> HttpResponse:
 
     return render(request, 'users/signup.html', context)
 
-""""
-login: to your account
-"""
 @require_http_methods(['GET', 'POST'])
 def login_v(request) -> HttpResponse:
     context = {
-        'authorize_uri': authorize_uri+FROMLOGIN,
+        'authorize_uri': build_authorize_uri(FROMLOGIN),
         'show_alerts': True,
         'request': request
     }
@@ -75,10 +76,11 @@ def login_v(request) -> HttpResponse:
             login(request, user)
             context['request'] = request
             return render(request, 'home/welcome.html', context)
-    else: # GET request
+    else:
         form = AuthenticationForm()
     context['form'] = form
     return render(request, 'users/login.html', context)
+
 
 """
 Callback for Oauth2 logic
