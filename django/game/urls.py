@@ -4,8 +4,8 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 urlpatterns = [
-    path('', lobby, name='lobby'),
-    path('<int:party_id>/', game, name='game'),
+    path('<int:party_id>/', game, name='game'),  # Game page with party ID
+    path('', lobby, name='lobby'),  # Lobby page
     path('submit_result/', submit_game_result, name='submit_game_result'),  # New endpoint
 ]
 
