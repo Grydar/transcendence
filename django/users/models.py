@@ -8,7 +8,7 @@ from .helpers import pick_random_description
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(default='default.jpg', upload_to='profile_pics')
+    image = models.ImageField(default='default.png', upload_to='profile_pics')
     isstudent = models.BooleanField(default=False)
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)

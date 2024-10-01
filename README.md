@@ -22,3 +22,6 @@ POSTGRES_PASSWORD=example
 POSTGRES_EMAIL=example
 ```
 
+## Accessing Web Application
+
+To access the web application, navigate to `https://localhost` in your web browser.

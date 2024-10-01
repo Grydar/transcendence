@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             name='Profile',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('image', models.ImageField(default='default.jpg', upload_to='profile_pics')),
+                ('image', models.ImageField(default='default.png', upload_to='profile_pics')),
                 ('isstudent', models.BooleanField(default=False)),
                 ('friends', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=30), size=None)),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
