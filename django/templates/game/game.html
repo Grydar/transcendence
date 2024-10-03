@@ -1,3 +1,5 @@
+<!-- templates/game/game.html -->
+
 {% extends 'home.html' %}
 {% load static %}
 
@@ -10,21 +12,20 @@
 {% endblock %}
 
 {% block script %}
-
 <script>
-    const user = '{{ user.username|escapejs }}';  // Use username or any identifier
+    const user = '{{ user.username|escapejs }}';
     const party_id = '{{ party_id|escapejs }}';
-    const submitResultUrl = "{% url 'submit_game_result' %}";
 </script>
 
 <script src="{% static 'pong.js' %}" defer></script>
-
 {% endblock %}
 
 {% block body %}
-
-<div id="scene-box">
-    <canvas id="game" width="800" height="600"></canvas>
+<div id="waiting-room">
+    <p>Waiting for another player to join...</p>
 </div>
 
+<div id="game-container">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+</div>
 {% endblock %}
