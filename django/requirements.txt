@@ -9,3 +9,4 @@ django-crispy-forms
 crispy-bootstrap5
 Pillow
 django-render-block
+channels

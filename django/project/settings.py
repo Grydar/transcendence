@@ -37,23 +37,16 @@ INSTALLED_APPS = [
     'home',
     'game',
     'users',
+    'channels',
 ]
 
 ASGI_APPLICATION = 'project.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
-        'CONFIG': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': environ.get('POSTGRES_DB'),
-            'USER': environ.get('POSTGRES_USER'),
-            'PASSWORD': environ.get('POSTGRES_PASSWORD'),
-            'HOST': 'db',
-            'PORT': '',
-
-            }
-        },
-    }
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

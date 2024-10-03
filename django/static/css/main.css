@@ -304,7 +304,6 @@ header {
 }
 
 .login_box > div:first-child {
-    background-image: url('../../../static/images/game.webp');
     background-position: center;
     background-repeat: no-repeat;
     background-size: cover;
