@@ -16,7 +16,7 @@
     </p>
 </div>
 <div>
-    <form method="post" action="{% url 'lobby' %}">
+    <form method="post" action="{% url 'game:lobby' %}">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Create Party</button>
@@ -36,7 +36,7 @@
             <tr>
                 <th scope="row">{{ party.id }}</th>
                 <td>{{ party.nbPlayer }}</td>
-                <td><a href="{% url 'game' party.id %}">JOIN</a></td>
+                <td><a href="{% url 'game:game' party.id %}">JOIN</a></td>
             </tr>
             {% endfor %}
         </tbody>

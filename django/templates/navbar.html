@@ -1,6 +1,6 @@
 {% load static %}
 
-<header class="navbar" hx-boost="true">
+<header class="navbar">
     <div class="container-sm mt-2 mb-2">
         <div class="row_custom">
             {% if request.user.is_authenticated %}
@@ -17,7 +17,7 @@
                         {% endif %}
                         <li><a href="{% url 'home:welcome' %}" hx-target="#app-root">Home</a></li>
                         <li><a href="{% url 'home:leaderboard' %}" hx-target="#app-root">Leaderboard</a></li>
-                        <li><a href="/game/" hx-target="#app-root">Game</a></li>
+                        <li><a href="{% url 'game:lobby' %}" hx-target="#app-root">Game</a></li>
                         <li><a href="{% url 'users:profile' %}{{request.user.username}}" hx-target="#app-root">Profile</a></li>
                     {% endif %}
                 </ul>
