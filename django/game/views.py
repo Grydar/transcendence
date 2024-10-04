@@ -14,7 +14,7 @@ def lobby(request):
             party = form.save(commit=False)
             party.creator = request.user
             party.save()
-            return redirect('game', party_id=party.id)  # Redirect to game with party ID
+            return redirect('game:game', party_id=party.id)  # Redirect to game with party ID
     else:
         form = CreatePartyForm()
     parties = Party.objects.all()

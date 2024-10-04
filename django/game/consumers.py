@@ -68,13 +68,15 @@ class PongConsumer(AsyncWebsocketConsumer):
                     'type': 'start_game',
                     'player_one_id': game_state['players'][0],
                     'player_two_id': game_state['players'][1],
+                    'countdown_duration': 3,
                 }
             )
             # Start game loop in a background task with a delay
-            asyncio.create_task(self.start_game_loop_with_delay())
+            asyncio.create_task(self.start_game_loop_with_delay(countdown_duration=3))
 
-    async def start_game_loop_with_delay(self):
-        await asyncio.sleep(1)  # Wait for 1 second to ensure clients are ready
+
+    async def start_game_loop_with_delay(self, countdown_duration):
+        await asyncio.sleep(countdown_duration + 0.5)  # Wait for countdown + 'GO!' display time
         self.game_loop_task = asyncio.create_task(self.game_loop())
 
     async def disconnect(self, close_code):

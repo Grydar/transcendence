@@ -61,6 +61,35 @@ socket.onopen = function() {
     console.log('WebSocket connection opened');
 };
 
+function startCountdown(duration) {
+    let countdownTime = duration;
+
+    function updateCountdown() {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Display the countdown number
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 72px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (countdownTime > 0) {
+            ctx.fillText(countdownTime, canvas.width / 2, canvas.height / 2);
+            countdownTime--;
+            setTimeout(updateCountdown, 1000);
+        } else {
+            ctx.fillText('GO!', canvas.width / 2, canvas.height / 2);
+            // Wait a moment before starting the game to show 'GO!'
+            setTimeout(function() {
+                gameStarted = true;
+                requestAnimationFrame(draw);
+            }, 500);
+        }
+    }
+
+    updateCountdown();
+}
+
 socket.onmessage = function(event) {
     const data = JSON.parse(event.data);
 
@@ -70,14 +99,13 @@ socket.onmessage = function(event) {
     }
 
     if (data.action === 'start_game') {
-        gameStarted = true;
+        gameStarted = false; // Ensure game doesn't start yet
         document.getElementById('waiting-room').style.display = 'none';
         document.getElementById('game-container').style.display = 'block';
-
-        // Ensure IDs are integers
+    
         const playerOneId = parseInt(data.player_one_id);
         const playerTwoId = parseInt(data.player_two_id);
-
+    
         // Determine if this player is player one or two
         if (userId === playerOneId) {
             isPlayerOne = true;
@@ -86,8 +114,9 @@ socket.onmessage = function(event) {
         } else {
             console.error('User ID does not match any player ID');
         }
-
-        requestAnimationFrame(draw);
+    
+        const countdownDuration = data.countdown_duration || 3;
+        startCountdown(countdownDuration);
     }
 
     if (data.action === 'update_state') {

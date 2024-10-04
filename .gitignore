@@ -13,7 +13,10 @@ __pycache__/
 
 # Media/static files
 # media/
-#static/
+# static/
+
+# Ignore database data directory
+data/
 
 # Environments
 .env
