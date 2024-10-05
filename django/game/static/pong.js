@@ -7,6 +7,9 @@ const socket = new WebSocket(socketUrl);
 let userId = null;
 let isPlayerOne = false;
 
+let playerOneUsername = '';
+let playerTwoUsername = '';
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -27,6 +30,16 @@ let gameStarted = false;
 
 const scoreBoard = document.createElement('div');
 scoreBoard.id = 'scoreBoard';
+
+const leftScoreSpan = document.createElement('span');
+leftScoreSpan.id = 'leftScore';
+const rightScoreSpan = document.createElement('span');
+rightScoreSpan.id = 'rightScore';
+scoreBoard.appendChild(leftScoreSpan);
+scoreBoard.appendChild(rightScoreSpan);
+leftScoreSpan.style.float = 'left';
+rightScoreSpan.style.float = 'right';
+
 scoreBoard.style.color = 'white';
 scoreBoard.style.fontSize = '24px';
 scoreBoard.style.textAlign = 'center';
@@ -105,7 +118,11 @@ socket.onmessage = function(event) {
     
         const playerOneId = parseInt(data.player_one_id);
         const playerTwoId = parseInt(data.player_two_id);
-    
+
+        // Store usernames
+        playerOneUsername = data.player_one_username;
+        playerTwoUsername = data.player_two_username;
+        
         // Determine if this player is player one or two
         if (userId === playerOneId) {
             isPlayerOne = true;
@@ -133,16 +150,45 @@ socket.onmessage = function(event) {
     }
 
     if (data.action === 'game_over') {
-        alert(data.message);
+        score1 = data.score1;
+        score2 = data.score2;
+        updateScoreBoard();
         gameStarted = false;
+
+        const canvas = document.getElementById('gameCanvas');
+        const gameoverMessage = document.getElementById('gameover-message');
+    
+        // Get canvas position relative to its parent
+        const canvasRect = canvas.getBoundingClientRect();
+        const parentRect = canvas.parentElement.getBoundingClientRect();
+    
+        // Calculate the position of the canvas relative to its parent
+        const topPosition = canvas.offsetTop;
+        const leftPosition = canvas.offsetLeft;
+    
+        // Apply styles to position the gameover message over the canvas
+        gameoverMessage.style.position = 'absolute';
+        gameoverMessage.style.top = topPosition + 'px';
+        gameoverMessage.style.left = leftPosition + 'px';
+        gameoverMessage.style.width = canvas.width - 44 + 'px';
+        gameoverMessage.style.height = canvas.height  - 32 + 'px';
+        gameoverMessage.style.display = 'flex';
+    
+        document.getElementById('gameover-text').textContent = data.message;
         // Optionally redirect or reset the game
     }
 };
 
 function updateScoreBoard() {
-    let playerScore = isPlayerOne ? score1 : score2;
-    let opponentScore = isPlayerOne ? score2 : score1;
-    scoreBoard.textContent = `You: ${playerScore} - Opponent: ${opponentScore}`;
+    let leftUsername, leftScore, rightUsername, rightScore;
+
+    leftUsername = playerOneUsername;
+    leftScore = score1;
+    rightUsername = playerTwoUsername;
+    rightScore = score2;
+
+    document.getElementById('leftScore').textContent = `${leftUsername}: ${leftScore}`;
+    document.getElementById('rightScore').textContent = `${rightUsername}: ${rightScore}`;
 }
 
 socket.onclose = function() {

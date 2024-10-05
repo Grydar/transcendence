@@ -14,6 +14,14 @@ class PongConsumer(AsyncWebsocketConsumer):
     paddle_height = 100
     game_loop = None
 
+    @database_sync_to_async
+    def get_username(self, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            return user.username
+        except User.DoesNotExist:
+            return 'Unknown User'
+
     async def connect(self):
         self.party_id = self.scope['url_route']['kwargs']['party_id']
         self.room_group_name = f'pong_{self.party_id}'
@@ -39,8 +47,8 @@ class PongConsumer(AsyncWebsocketConsumer):
                 'ball': {
                     'x': 400,
                     'y': 300,
-                    'speed_x': 5,
-                    'speed_y': 5,
+                    'speed_x': 10,
+                    'speed_y': 10,
                 },
                 'game_started': False,
             }
@@ -62,17 +70,26 @@ class PongConsumer(AsyncWebsocketConsumer):
         # If two players have joined and the game hasn't started, start the game
         if len(game_state['players']) == 2 and not game_state['game_started']:
             game_state['game_started'] = True
+            player_one_id = game_state['players'][0]
+            player_two_id = game_state['players'][1]
+            
+            # Retrieve usernames
+            player_one_username = await self.get_username(player_one_id)
+            player_two_username = await self.get_username(player_two_id)
+            
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': 'start_game',
-                    'player_one_id': game_state['players'][0],
-                    'player_two_id': game_state['players'][1],
+                    'player_one_id': player_one_id,
+                    'player_two_id': player_two_id,
+                    'player_one_username': player_one_username,
+                    'player_two_username': player_two_username,
                     'countdown_duration': 3,
                 }
             )
-            # Start game loop in a background task with a delay
             asyncio.create_task(self.start_game_loop_with_delay(countdown_duration=3))
+
 
 
     async def start_game_loop_with_delay(self, countdown_duration):
@@ -111,6 +128,8 @@ class PongConsumer(AsyncWebsocketConsumer):
             'action': 'start_game',
             'player_one_id': event['player_one_id'],
             'player_two_id': event['player_two_id'],
+            'player_one_username': event['player_one_username'],
+            'player_two_username': event['player_two_username'],
         }))
 
     def increase_ball_speed(self, speed_x, speed_y, max_speed, speed_increment):
@@ -213,8 +232,8 @@ class PongConsumer(AsyncWebsocketConsumer):
         ball['y'] = 300
 
         # Reset ball speed to initial values
-        initial_speed_x = 5
-        initial_speed_y = 5
+        initial_speed_x = 10
+        initial_speed_y = 10
 
         # Invert direction of speed_x to alternate serving player
         ball['speed_x'] = initial_speed_x if ball['speed_x'] < 0 else -initial_speed_x
@@ -236,12 +255,14 @@ class PongConsumer(AsyncWebsocketConsumer):
 
     async def end_game(self, winner, scores):
         # Notify players about the game result
+        game_state = self.channel_layer.game_state[self.room_group_name]
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'game_over',
                 'winner': winner,
                 'scores': scores,
+                'players': game_state['players'],  # Include players in the event
             }
         )
         # Update user profiles
@@ -264,12 +285,12 @@ class PongConsumer(AsyncWebsocketConsumer):
     async def game_over(self, event):
         winner = event['winner']
         scores = event['scores']
-        message = 'You win!' if self.user_id == winner else 'You lose!'
+        players = event['players']  # Retrieve the list of players
         await self.send(text_data=json.dumps({
             'action': 'game_over',
-            'message': message,
-            'score1': scores[event['winner']],
-            'score2': scores[next(uid for uid in scores if uid != event['winner'])],
+            'message': 'You win!' if self.user_id == winner else 'You lose!',
+            'score1': scores[players[0]],  # Ensure score1 corresponds to players[0]
+            'score2': scores[players[1]],  # Ensure score2 corresponds to players[1]
         }))
 
     async def update_user_profiles(self, winner_id, scores):
