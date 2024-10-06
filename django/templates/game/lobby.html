@@ -5,15 +5,9 @@
     Lobby
 {% endblock %}
 
-{% block script %}
-{% endblock %}
-
 {% block body %}
-
 <div>
-    <p>
-        Lobby menu
-    </p>
+    <p>Lobby menu</p>
 </div>
 <div>
     <form method="post" action="{% url 'game:lobby' %}">
@@ -28,19 +22,28 @@
             <tr>
                 <th scope="col">ID</th>
                 <th scope="col">Number of Players</th>
+                <th scope="col">Current Players</th>
                 <th></th>
             </tr>
         </thead>
         <tbody>
             {% for party in parties %}
-            <tr>
-                <th scope="row">{{ party.id }}</th>
-                <td>{{ party.nbPlayer }}</td>
-                <td><a href="{% url 'game:game' party.id %}">JOIN</a></td>
-            </tr>
+                {% if party.status == 'active' %}
+                    <tr>
+                        <th scope="row">{{ party.id }}</th>
+                        <td>{{ party.nbPlayer }}</td>
+                        <td>{{ party.num_players }}</td>
+                        <td><a href="{% url 'game:game' party.id %}">JOIN</a></td>
+                    </tr>
+                {% elif party.status == 'in_progress' %}
+                    <tr>
+                        <th scope="row">{{ party.id }}</th>
+                        <td>{{ party.nbPlayer }}</td>
+                        <td>{{ party.num_players }}</td>
+                    </tr>    
+                {% endif %}
             {% endfor %}
         </tbody>
     </table>
 </div>
-
 {% endblock %}

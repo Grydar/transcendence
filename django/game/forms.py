@@ -6,8 +6,8 @@ from .models import Party
 class CreatePartyForm(forms.ModelForm):
     class Meta:
         model = Party
-        fields = ['nbPlayer']
+        fields = ['num_players']
         labels = {
-            'nbPlayer': 'Number of players'
+            'num_players': 'Number of players'
         }
 

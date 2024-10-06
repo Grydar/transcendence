@@ -5,6 +5,7 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 from channels.db import database_sync_to_async
+from .models import Party, LeaderboardEntry
 
 User = get_user_model()
 
@@ -13,6 +14,8 @@ class PongConsumer(AsyncWebsocketConsumer):
     paddle_width = 10
     paddle_height = 100
     game_loop = None
+
+    game_states = {}
 
     @database_sync_to_async
     def get_username(self, user_id):
@@ -25,8 +28,14 @@ class PongConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.party_id = self.scope['url_route']['kwargs']['party_id']
         self.room_group_name = f'pong_{self.party_id}'
-        self.game_loop_task = None  # Initialize the game loop task
+        self.game_loop_task = None
         self.user_id = self.scope['user'].id if self.scope['user'].is_authenticated else None
+
+        # Get the party's num_players
+        self.num_players = await self.get_party_num_players(self.party_id)
+        if self.num_players is None:
+            await self.close()
+            return
 
         # Join the group
         await self.channel_layer.group_add(
@@ -36,11 +45,12 @@ class PongConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        # Initialize game state if not already initialized
-        if not hasattr(self.channel_layer, 'game_state'):
-            self.channel_layer.game_state = {}
-        if self.room_group_name not in self.channel_layer.game_state:
-            self.channel_layer.game_state[self.room_group_name] = {
+        # Update party player count
+        await self.update_party_on_connect(self.party_id)
+
+        # Initialize game state
+        if self.room_group_name not in PongConsumer.game_states:
+            PongConsumer.game_states[self.room_group_name] = {
                 'players': [],
                 'paddle_positions': {},
                 'scores': {},
@@ -51,15 +61,17 @@ class PongConsumer(AsyncWebsocketConsumer):
                     'speed_y': 10,
                 },
                 'game_started': False,
+                'num_players': self.num_players,
+                'game_loop_started': False,
             }
 
-        game_state = self.channel_layer.game_state[self.room_group_name]
+        game_state = PongConsumer.game_states[self.room_group_name]
 
-        # Add player to the game if not already added
-        if self.user_id not in game_state['players'] and len(game_state['players']) < 2:
+        # Add player to the game
+        if self.user_id not in game_state['players'] and len(game_state['players']) < game_state['num_players']:
             game_state['players'].append(self.user_id)
-            game_state['paddle_positions'][self.user_id] = 250  # Initial paddle position
-            game_state['scores'][self.user_id] = 0  # Initialize score
+            game_state['paddle_positions'][self.user_id] = 250
+            game_state['scores'][self.user_id] = 0
 
         # Send user ID to the client
         await self.send(text_data=json.dumps({
@@ -67,52 +79,52 @@ class PongConsumer(AsyncWebsocketConsumer):
             'user_id': self.user_id,
         }))
 
-        # If two players have joined and the game hasn't started, start the game
-        if len(game_state['players']) == 2 and not game_state['game_started']:
+        # Start game if enough players have joined
+        if len(game_state['players']) == game_state['num_players'] and not game_state['game_started']:
             game_state['game_started'] = True
-            player_one_id = game_state['players'][0]
-            player_two_id = game_state['players'][1]
-            
+
             # Retrieve usernames
-            player_one_username = await self.get_username(player_one_id)
-            player_two_username = await self.get_username(player_two_id)
-            
+            player_usernames = {}
+            for player_id in game_state['players']:
+                username = await self.get_username(player_id)
+                player_usernames[player_id] = username
+
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': 'start_game',
-                    'player_one_id': player_one_id,
-                    'player_two_id': player_two_id,
-                    'player_one_username': player_one_username,
-                    'player_two_username': player_two_username,
+                    'player_ids': game_state['players'],
+                    'player_usernames': player_usernames,
                     'countdown_duration': 3,
                 }
             )
-            asyncio.create_task(self.start_game_loop_with_delay(countdown_duration=3))
-
-
+            if not game_state['game_loop_started']:
+                game_state['game_loop_started'] = True
+                asyncio.create_task(self.start_game_loop_with_delay(countdown_duration=3))
 
     async def start_game_loop_with_delay(self, countdown_duration):
         await asyncio.sleep(countdown_duration + 0.5)  # Wait for countdown + 'GO!' display time
         self.game_loop_task = asyncio.create_task(self.game_loop())
 
     async def disconnect(self, close_code):
-        # Leave the group
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
-        # Clean up game state if necessary
-        game_state = self.channel_layer.game_state.get(self.room_group_name, {})
-        if self.user_id in game_state.get('players', []):
-            game_state['players'].remove(self.user_id)
-            del game_state['paddle_positions'][self.user_id]
-            del game_state['scores'][self.user_id]
-        # If all players have disconnected, delete the game state
-        if not game_state.get('players'):
-            if self.room_group_name in self.channel_layer.game_state:
-                del self.channel_layer.game_state[self.room_group_name]
+    # Wrap the entire block in a try-except to catch KeyError
+        try:
+            game_state = PongConsumer.game_states[self.room_group_name]
+            if self.user_id in game_state.get('players', []):
+                game_state['players'].remove(self.user_id)
+                game_state['paddle_positions'].pop(self.user_id, None)
+                game_state['scores'].pop(self.user_id, None)
+            if not game_state.get('players'):
+                del PongConsumer.game_states[self.room_group_name]
+        except KeyError:
+            pass
 
+        # Update party info
+        await self.update_party_on_disconnect(self.party_id)
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -120,16 +132,15 @@ class PongConsumer(AsyncWebsocketConsumer):
 
         if action == 'move_paddle':
             paddleY = data.get('paddleY')
-            game_state = self.channel_layer.game_state[self.room_group_name]
+            game_state = PongConsumer.game_states[self.room_group_name]
             game_state['paddle_positions'][self.user_id] = paddleY
 
     async def start_game(self, event):
         await self.send(text_data=json.dumps({
             'action': 'start_game',
-            'player_one_id': event['player_one_id'],
-            'player_two_id': event['player_two_id'],
-            'player_one_username': event['player_one_username'],
-            'player_two_username': event['player_two_username'],
+            'player_ids': event['player_ids'],
+            'player_usernames': event['player_usernames'],
+            'countdown_duration': event.get('countdown_duration', 3),
         }))
 
     def increase_ball_speed(self, speed_x, speed_y, max_speed, speed_increment):
@@ -146,7 +157,7 @@ class PongConsumer(AsyncWebsocketConsumer):
         return new_speed_x, new_speed_y
 
     async def game_loop(self):
-        game_state = self.channel_layer.game_state[self.room_group_name]
+        game_state = PongConsumer.game_states[self.room_group_name]
         ball = game_state['ball']
         paddle_positions = game_state['paddle_positions']
         players = game_state['players']
@@ -226,7 +237,7 @@ class PongConsumer(AsyncWebsocketConsumer):
 
     async def reset_ball(self):
         # Reset the ball to the center
-        game_state = self.channel_layer.game_state[self.room_group_name]
+        game_state = PongConsumer.game_states[self.room_group_name]
         ball = game_state['ball']
         ball['x'] = 400
         ball['y'] = 300
@@ -255,7 +266,7 @@ class PongConsumer(AsyncWebsocketConsumer):
 
     async def end_game(self, winner, scores):
         # Notify players about the game result
-        game_state = self.channel_layer.game_state[self.room_group_name]
+        game_state = PongConsumer.game_states[self.room_group_name]
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -277,10 +288,13 @@ class PongConsumer(AsyncWebsocketConsumer):
                 pass
 
         # Clean up game state
-        del self.channel_layer.game_state[self.room_group_name]
+        del PongConsumer.game_states[self.room_group_name]
 
         # Remove all users from the group
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+
+        # Set party status to 'completed'
+        await self.set_party_completed(self.party_id)
 
     async def game_over(self, event):
         winner = event['winner']
@@ -292,6 +306,46 @@ class PongConsumer(AsyncWebsocketConsumer):
             'score1': scores[players[0]],  # Ensure score1 corresponds to players[0]
             'score2': scores[players[1]],  # Ensure score2 corresponds to players[1]
         }))
+
+    @database_sync_to_async
+    def get_party_num_players(self, party_id):
+        try:
+            party = Party.objects.get(id=party_id)
+            return party.num_players
+        except Party.DoesNotExist:
+            return None
+
+    @database_sync_to_async
+    def update_party_on_connect(self, party_id):
+        try:
+            party = Party.objects.get(id=party_id)
+            party.nbPlayer += 1
+            if party.nbPlayer >= party.num_players:
+                party.status = 'in_progress'
+            party.save()
+        except Party.DoesNotExist:
+            pass
+
+    @database_sync_to_async
+    def update_party_on_disconnect(self, party_id):
+        try:
+            party = Party.objects.get(id=party_id)
+            if party.status != 'completed':
+                party.nbPlayer -= 1
+                if party.nbPlayer <= 0:
+                    party.status = 'active'
+                party.save()
+        except Party.DoesNotExist:
+            pass
+
+    @database_sync_to_async
+    def set_party_completed(self, party_id):
+        try:
+            party = Party.objects.get(id=party_id)
+            party.status = 'completed'
+            party.save()
+        except Party.DoesNotExist:
+            pass
 
     async def update_user_profiles(self, winner_id, scores):
         # Update win/lose data in user profiles

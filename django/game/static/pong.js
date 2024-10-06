@@ -107,31 +107,30 @@ socket.onmessage = function(event) {
     const data = JSON.parse(event.data);
 
     if (data.action === 'set_user_id') {
-        userId = parseInt(data.user_id);  // Ensure userId is an integer
+        userId = parseInt(data.user_id);
         console.log(`Your user ID is: ${userId}`);
     }
 
     if (data.action === 'start_game') {
-        gameStarted = false; // Ensure game doesn't start yet
+        gameStarted = false;
         document.getElementById('waiting-room').style.display = 'none';
         document.getElementById('game-container').style.display = 'block';
-    
-        const playerOneId = parseInt(data.player_one_id);
-        const playerTwoId = parseInt(data.player_two_id);
 
-        // Store usernames
-        playerOneUsername = data.player_one_username;
-        playerTwoUsername = data.player_two_username;
-        
-        // Determine if this player is player one or two
-        if (userId === playerOneId) {
+        const playerIds = data.player_ids.map(id => parseInt(id));
+        const playerUsernames = data.player_usernames;
+
+        // Determine player role
+        if (userId === playerIds[0]) {
             isPlayerOne = true;
-        } else if (userId === playerTwoId) {
+        } else if (userId === playerIds[1]) {
             isPlayerOne = false;
         } else {
             console.error('User ID does not match any player ID');
         }
-    
+
+        playerOneUsername = playerUsernames[playerIds[0]];
+        playerTwoUsername = playerUsernames[playerIds[1]];
+
         const countdownDuration = data.countdown_duration || 3;
         startCountdown(countdownDuration);
     }
@@ -174,8 +173,11 @@ socket.onmessage = function(event) {
         gameoverMessage.style.height = canvas.height  - 32 + 'px';
         gameoverMessage.style.display = 'flex';
     
-        document.getElementById('gameover-text').textContent = data.message;
+        document.getElementById('gameover-text').textContent = data.message + ' Redirecting to lobby...';
         // Optionally redirect or reset the game
+        setTimeout(function() {
+            window.location.href = '/game/lobby/';
+        }, 4000);
     }
 };
 

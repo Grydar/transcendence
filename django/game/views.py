@@ -17,14 +17,15 @@ def lobby(request):
             return redirect('game:game', party_id=party.id)  # Redirect to game with party ID
     else:
         form = CreatePartyForm()
-    parties = Party.objects.all()
+    parties = Party.objects.exclude(status='completed')
     return render(request, 'game/lobby.html', {'form': form, 'parties': parties})
 
 def game(request, party_id):
     party = get_object_or_404(Party, id=party_id)
     return render(request, 'game/game.html', {
         'party_id': party_id,
-        'user': request.user
+        'user': request.user,
+        'num_players': party.num_players,
     })
 
 @require_POST

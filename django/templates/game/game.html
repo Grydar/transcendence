@@ -15,6 +15,7 @@
 <script>
     const user = '{{ user.username|escapejs }}';
     const party_id = '{{ party_id|escapejs }}';
+    const num_players = '{{ num_players|escapejs }}';
 </script>
 
 <script src="{% static 'pong.js' %}" defer></script>
@@ -29,6 +30,7 @@
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <div id="gameover-message" style="display: none;">
             <p id="gameover-text"></p>
+            <p id="redirect-text"></p>
         </div>
 </div>
 {% endblock %}

@@ -3,8 +3,13 @@ from django.contrib.auth.models import User
 
 class Party(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
-    nbPlayer = models.IntegerField(default=1)
-    # Add any other fields relevant to a party
+    num_players = models.IntegerField(choices=[(2, '2 Players'), (3, '3 Players')], default=2)
+    nbPlayer = models.IntegerField(default=0)  # Start with 1 since the creator joins immediately
+    status = models.CharField(
+        max_length=20,
+        choices=[('active', 'Active'), ('in_progress', 'In Progress'), ('completed', 'Completed')],
+        default='active'
+    )
 
     def __str__(self):
         return f"Party {self.id} by {self.creator.username}"
