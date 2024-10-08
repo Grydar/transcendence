@@ -18,11 +18,13 @@ class Party(models.Model):
         db_table = 'game_party'  # Custom table name
 
 class LeaderboardEntry(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='leaderboard_entries')
+    opponent = models.ForeignKey(User, on_delete=models.CASCADE, related_name='opponent_entries', null=True, blank=True)
     party = models.ForeignKey(Party, on_delete=models.CASCADE)
     player_score = models.IntegerField()
     opponent_score = models.IntegerField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.player_score} vs {self.opponent_score} at {self.timestamp}"
+        opponent_username = self.opponent.username if self.opponent else 'Unknown'
+        return f"{self.user.username} vs {opponent_username} - {self.player_score} vs {self.opponent_score} at {self.timestamp}"

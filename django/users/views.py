@@ -18,6 +18,7 @@ from django.urls import reverse
 from django.template.loader import render_to_string
 from render_block import render_block_to_string
 from django.middleware.csrf import get_token
+from game.models import LeaderboardEntry
 
 # Load environment variables
 load_dotenv()
@@ -183,6 +184,10 @@ def profile(request, username: str) -> HttpResponse:
             friend_list.save()
         friends = friend_list.friends.all()
         context['friends'] = friends
+
+        # Fetch the latest matches for the displayed user
+        latest_matches = LeaderboardEntry.objects.filter(user=displayed_user).order_by('-timestamp')[:10]
+        context['latest_matches'] = latest_matches
 
         # Define template variables
         is_self = True

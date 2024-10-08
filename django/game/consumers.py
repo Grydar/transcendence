@@ -279,6 +279,9 @@ class PongConsumer(AsyncWebsocketConsumer):
         # Update user profiles
         await self.update_user_profiles(winner, scores)
 
+        # Create LeaderboardEntry for both players
+        await self.create_leaderboard_entries(self.party_id, game_state['players'], scores)
+
         # Cancel the game loop task if it's still running
         if self.game_loop_task and not self.game_loop_task.done():
             self.game_loop_task.cancel()
@@ -346,6 +349,38 @@ class PongConsumer(AsyncWebsocketConsumer):
             party.save()
         except Party.DoesNotExist:
             pass
+
+    @database_sync_to_async
+    def create_leaderboard_entries(self, party_id, players, scores):
+        try:
+            party = Party.objects.get(id=party_id)
+            if len(players) != 2:
+                print("Not a two-player game, cannot create LeaderboardEntry")
+                return
+            player1_id, player2_id = players
+            user1 = User.objects.get(id=player1_id)
+            user2 = User.objects.get(id=player2_id)
+            score1 = scores[player1_id]
+            score2 = scores[player2_id]
+
+            # Create LeaderboardEntry for player1
+            LeaderboardEntry.objects.create(
+                user=user1,
+                opponent=user2,
+                party=party,
+                player_score=score1,
+                opponent_score=score2
+            )
+            # Create LeaderboardEntry for player2
+            LeaderboardEntry.objects.create(
+                user=user2,
+                opponent=user1,
+                party=party,
+                player_score=score2,
+                opponent_score=score1
+            )
+        except Exception as e:
+            print(f"Error creating LeaderboardEntry: {e}")
 
     async def update_user_profiles(self, winner_id, scores):
         # Update win/lose data in user profiles

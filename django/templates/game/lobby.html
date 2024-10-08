@@ -6,8 +6,8 @@
 {% endblock %}
 
 {% block body %}
-<div>
-    <p>Lobby menu</p>
+<div class="lobby-menu">
+    <h3>Lobby menu</h3>
 </div>
 <div>
     <form method="post" action="{% url 'game:lobby' %}">
@@ -21,8 +21,8 @@
         <thead>
             <tr>
                 <th scope="col">ID</th>
-                <th scope="col">Number of Players</th>
                 <th scope="col">Current Players</th>
+                <th scope="col">Number of Players</th>
                 <th></th>
             </tr>
         </thead>
@@ -40,6 +40,7 @@
                         <th scope="row">{{ party.id }}</th>
                         <td>{{ party.nbPlayer }}</td>
                         <td>{{ party.num_players }}</td>
+                        <td></td>
                     </tr>    
                 {% endif %}
             {% endfor %}

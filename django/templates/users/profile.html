@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block styles %}
-	<link rel="stylesheet" href="{% static 'users/styles.css' %}">
+	<link rel="stylesheet" href="{% static 'css/users.css' %}">
 {% endblock %}
 
 {% block body %}
@@ -146,11 +146,35 @@
 	<div class="d-flex">
 		<section class="feed">
 			<h3>Latest Matches</h3>
-			<p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Atque quidem voluptatum quisquam officiis numquam, perferendis tempore rem nostrum ut libero asperiores optio voluptate quaerat? Minima.</p>
+			{% if latest_matches %}
+				<ul class="match-list">
+					{% for match in latest_matches %}
+						<li class="match-item">
+							<div>
+								<strong>Opponent:</strong>
+								<a 
+									hx-get="/users/profile/{{ match.opponent.username }}"
+									hx-target="#app-root"
+									hx-push-url="true">
+									{{ match.opponent.username }}
+								</a>
+							</div>
+							<div>
+								<strong>Score:</strong> {{ match.player_score }} - {{ match.opponent_score }}
+							</div>
+							<div>
+								<strong>Date:</strong> {{ match.timestamp|date:"Y-m-d H:i" }}
+							</div>
+						</li>
+					{% endfor %}
+				</ul>
+			{% else %}
+				<p>No matches found.</p>
+			{% endif %}
 		</section>
 		
 		{% if request.user.is_authenticated and is_self == True %}
-		<aside class="sidebar">
+		<aside class="sidebar ms-auto">
 
 			<!-- Friends List -->
 			<h5>Friends ({{ friends | length }})</h5>
