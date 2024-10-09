@@ -10,6 +10,14 @@ if (match_id) {
 console.log(`WebSocket URL: ${socketUrl}`);
 const socket = new WebSocket(socketUrl);
 
+let AIactive = false;
+const toggleAI = document.getElementById('toggleAI'); //Is button to toggle AI on and off
+
+// Event listener to track checkbox changes
+toggleAI.addEventListener('change', function(event) {
+    isAIActive = event.target.checked;
+});
+
 let userId = null;
 let isPlayerOne = false;
 
@@ -227,7 +235,10 @@ function draw() {
 		}
 		sendPaddlePosition();
 	}
-
+	requestAnimationFrame(draw);
+	
+	if (AIactive)
+		minimax(new position(ballX, ballY, paddle2Y), calcBallTrajectory(calcBallDirection({ball_x: ballX, ball_y: ballY})));
 	requestAnimationFrame(draw);
 }
 
