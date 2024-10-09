@@ -13,9 +13,6 @@ const socket = new WebSocket(socketUrl);
 let userId = null;
 let isPlayerOne = false;
 
-let playerOneUsername = '';
-let playerTwoUsername = '';
-
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -36,16 +33,6 @@ let gameStarted = false;
 
 const scoreBoard = document.createElement('div');
 scoreBoard.id = 'scoreBoard';
-
-const leftScoreSpan = document.createElement('span');
-leftScoreSpan.id = 'leftScore';
-const rightScoreSpan = document.createElement('span');
-rightScoreSpan.id = 'rightScore';
-scoreBoard.appendChild(leftScoreSpan);
-scoreBoard.appendChild(rightScoreSpan);
-leftScoreSpan.style.float = 'left';
-rightScoreSpan.style.float = 'right';
-
 scoreBoard.style.color = 'white';
 scoreBoard.style.fontSize = '24px';
 scoreBoard.style.textAlign = 'center';
@@ -59,6 +46,7 @@ let score2 = 0;
 document.addEventListener('keydown', keyDownHandler);
 document.addEventListener('keyup', keyUpHandler);
 
+//key is pressed
 function keyDownHandler(e) {
     if (e.key === 'ArrowUp') {
         upPressed = true;
@@ -67,6 +55,7 @@ function keyDownHandler(e) {
     }
 }
 
+//key is released
 function keyUpHandler(e) {
     if (e.key === 'ArrowUp') {
         upPressed = false;
@@ -113,30 +102,27 @@ socket.onmessage = function(event) {
     const data = JSON.parse(event.data);
 
     if (data.action === 'set_user_id') {
-        userId = parseInt(data.user_id);
+        userId = parseInt(data.user_id);  // Ensure userId is an integer
         console.log(`Your user ID is: ${userId}`);
     }
 
     if (data.action === 'start_game') {
-        gameStarted = false;
+        gameStarted = false; // Ensure game doesn't start yet
         document.getElementById('waiting-room').style.display = 'none';
         document.getElementById('game-container').style.display = 'block';
-
-        const playerIds = data.player_ids.map(id => parseInt(id));
-        const playerUsernames = data.player_usernames;
-
-        // Determine player role
-        if (userId === playerIds[0]) {
+    
+        const playerOneId = parseInt(data.player_one_id);
+        const playerTwoId = parseInt(data.player_two_id);
+    
+        // Determine if this player is player one or two
+        if (userId === playerOneId) {
             isPlayerOne = true;
-        } else if (userId === playerIds[1]) {
+        } else if (userId === playerTwoId) {
             isPlayerOne = false;
         } else {
             console.error('User ID does not match any player ID');
         }
-
-        playerOneUsername = playerUsernames[playerIds[0]];
-        playerTwoUsername = playerUsernames[playerIds[1]];
-
+    
         const countdownDuration = data.countdown_duration || 3;
         startCountdown(countdownDuration);
     }
@@ -155,31 +141,8 @@ socket.onmessage = function(event) {
     }
 
     if (data.action === 'game_over') {
-        score1 = data.score1;
-        score2 = data.score2;
-        updateScoreBoard();
+        alert(data.message);
         gameStarted = false;
-
-        const canvas = document.getElementById('gameCanvas');
-        const gameoverMessage = document.getElementById('gameover-message');
-    
-        // Get canvas position relative to its parent
-        const canvasRect = canvas.getBoundingClientRect();
-        const parentRect = canvas.parentElement.getBoundingClientRect();
-    
-        // Calculate the position of the canvas relative to its parent
-        const topPosition = canvas.offsetTop;
-        const leftPosition = canvas.offsetLeft;
-    
-        // Apply styles to position the gameover message over the canvas
-        gameoverMessage.style.position = 'absolute';
-        gameoverMessage.style.top = topPosition + 'px';
-        gameoverMessage.style.left = leftPosition + 'px';
-        gameoverMessage.style.width = canvas.width - 44 + 'px';
-        gameoverMessage.style.height = canvas.height  - 32 + 'px';
-        gameoverMessage.style.display = 'flex';
-    
-        document.getElementById('gameover-text').textContent = data.message + ' Redirecting to lobby...';
         // Optionally redirect or reset the game
         setTimeout(function() {
             if (match_id) {
@@ -194,15 +157,9 @@ socket.onmessage = function(event) {
 };
 
 function updateScoreBoard() {
-    let leftUsername, leftScore, rightUsername, rightScore;
-
-    leftUsername = playerOneUsername;
-    leftScore = score1;
-    rightUsername = playerTwoUsername;
-    rightScore = score2;
-
-    document.getElementById('leftScore').textContent = `${leftUsername}: ${leftScore}`;
-    document.getElementById('rightScore').textContent = `${rightUsername}: ${rightScore}`;
+    let playerScore = isPlayerOne ? score1 : score2;
+    let opponentScore = isPlayerOne ? score2 : score1;
+    scoreBoard.textContent = `You: ${playerScore} - Opponent: ${opponentScore}`;
 }
 
 socket.onclose = function() {
@@ -275,13 +232,14 @@ function draw() {
 }
 
 
+
 /*AI stuff*/
 
 class position {
-	constructor(ball_x, ball_y, bot_paddle_y) {
-		this.ball_x = ballX;
-		this.ball_y = ballY;
-		this.bot_paddle_y = player2Y;
+	constructor(ballX, ballY, player2Y) {
+		this.ballX = ballX;
+		this.ballY = ballY;
+		this.player2Y = player2Y;
 	}
 }
 
@@ -380,6 +338,3 @@ function minimax(currentPosition, ballTrajectory)
 		}
 	}
 }
-
-// Start the game
-// update();
