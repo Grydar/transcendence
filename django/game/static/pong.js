@@ -1,7 +1,13 @@
 // static/pong.js
 
 const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-const socketUrl = protocol + '://' + window.location.host + '/ws/pong/' + party_id + '/';
+let socketUrl = protocol + '://' + window.location.host + '/ws/pong/' + party_id + '/';
+console.log(`WebSocket URL: ${socketUrl}`);
+
+if (match_id) {
+    socketUrl += `${match_id}/`;
+}
+console.log(`WebSocket URL: ${socketUrl}`);
 const socket = new WebSocket(socketUrl);
 
 let userId = null;
@@ -176,8 +182,14 @@ socket.onmessage = function(event) {
         document.getElementById('gameover-text').textContent = data.message + ' Redirecting to lobby...';
         // Optionally redirect or reset the game
         setTimeout(function() {
-            window.location.href = '/game/lobby/';
-        }, 4000);
+            if (match_id) {
+                window.location.href = '/game/tournaments/'+ tournament_id + '/progress/';
+                return;
+            }
+            else {
+                window.location.href = '/game/lobby/';
+            }
+        }, 3000);
     }
 };
 

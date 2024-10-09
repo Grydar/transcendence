@@ -1,0 +1,36 @@
+{% extends 'home.html' %}
+{% load static %}
+
+{% block title %}
+	{{ tournament.name }} Progress
+{% endblock %}
+
+{% block body %}
+<h2>Tournament Progress: {{ tournament.name }}</h2>
+<p>Status: {{ tournament.status }}</p>
+
+{% for match in matches %}
+    <div>
+        <strong>Round {{ match.round_number }}:</strong>
+        {% if match.player1 %}
+            {{ match.player1.username }}
+        {% else %}
+            <em>Bye</em>
+        {% endif %}
+        vs
+        {% if match.player2 %}
+            {{ match.player2.username }}
+        {% else %}
+            <em>Bye</em>
+        {% endif %}
+        - Status: {{ match.status }}
+        {% if match.status == 'completed' %}
+            - Winner: {{ match.winner.username }}
+        {% elif match.status == 'pending' %}
+            - <a href="{% url 'game:play_match' tournament.id match.id %}">Play Now</a>
+        {% else %}
+            - <em>Waiting for players</em>
+        {% endif %}
+    </div>
+{% endfor %}
+{% endblock %}
