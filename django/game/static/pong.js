@@ -273,3 +273,113 @@ function draw() {
 
 	requestAnimationFrame(draw);
 }
+
+
+/*AI stuff*/
+
+class position {
+	constructor(ball_x, ball_y, bot_paddle_y) {
+		this.ball_x = ballX;
+		this.ball_y = ballY;
+		this.bot_paddle_y = player2Y;
+	}
+}
+
+let prevBallPos;
+
+function calcBallDirection(ballPos)
+{
+	let direction = new position(ballPos.ball_x, ballPos.ball_y, null);
+	if (prevBallPos)
+	{
+		direction.ball_x = ballPos.ball_x - prevBallPos.ball_x;
+		direction.ball_y = ballPos.ball_y - prevBallPos.ball_y;
+	}
+	prevBallPos = ballPos;
+	return (direction);
+}
+
+//Returns list of points that the ball will be before hitting AI player's wall
+function calcBallTrajectory(direction)
+{
+	let trajectory = [];
+	for (let i = 0; direction.ball_x < canvas.width && i < 10000; i++)
+	{
+		if (direction.ball_y + ballSpeedY > canvas.height || direction.ball_y - ballSpeedY < 0)
+			direction.ball_y = -direction.ball_y;
+		trajectory.push(new position(direction.ball_x, direction.ball_y, null));
+		direction.ball_x += ballSpeedX;
+		direction.ball_y += ballSpeedY;
+	}
+	return (trajectory);
+}
+
+function simulateKeyPress(which)
+{
+	var keyboardEvent = document.createEvent('KeyboardEvent');
+	var initMethod = typeof keyboardEvent.initKeyboardEvent !== 'undefined' ? 'initKeyboardEvent' : 'initKeyEvent';
+    
+	if (which == "keydown")
+	{
+		keyboardEvent[initMethod](
+			'keydown', // event type: keydown, keyup, keypress
+			true, // bubbles
+			true, // cancelable
+			window, // view: should be window
+			false, // ctrlKey
+			false, // altKey
+			false, // shiftKey
+			false, // metaKey
+			40, // keyCode: unsigned long - the virtual key code, else 0
+			0, // charCode: unsigned long - the Unicode character associated with the depressed key, else 0
+		);
+	}
+	else
+	{
+		keyboardEvent[initMethod](
+			'keyup', // event type: keydown, keyup, keypress
+			true, // bubbles
+			true, // cancelable
+			window, // view: should be window
+			false, // ctrlKey
+			false, // altKey
+			false, // shiftKey
+			false, // metaKey
+			40, // keyCode: unsigned long - the virtual key code, else 0
+			0, // charCode: unsigned long - the Unicode character associated with the depressed key, else 0
+		);
+	}
+	document.dispatchEvent(keyboardEvent);
+}
+
+function minimax(currentPosition, ballTrajectory)
+{
+	if (gameOver)
+		return ;
+
+	//Can we still hit the ball if we don't move the paddle?
+	for (let i = 0; i < ballTrajectory.length; i++)
+	{
+		if (currentPosition.bot_paddle_y == ballTrajectory[i].ball_y) //we should check x as well somehow
+			return ;
+	}
+	for (let i = playerSpeed; currentPosition.bot_paddle_y + i < canvas.height && currentPosition.bot_paddle_y + i > 0; i += playerSpeed)
+	{
+		for (let k = 0; k < ballTrajectory.length; k++)
+		{
+			if (currentPosition.bot_paddle_y + i == ballTrajectory[k].ball_y)
+				return (simulateKeyPress("keydown"));
+		}
+	}
+	for (let i = playerSpeed; currentPosition.bot_paddle_y - i > 0; i -= playerSpeed)
+	{
+		for (let k = 0; k < ballTrajectory.length; k++)
+		{
+			if (currentPosition.bot_paddle_y - i == ballTrajectory[k].ball_y)
+				return (simulateKeyPress("keyup"));
+		}
+	}
+}
+
+// Start the game
+// update();
