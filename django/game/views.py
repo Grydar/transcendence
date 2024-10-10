@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 from .models import Party, LeaderboardEntry, Tournament, TournamentMatch
 from .forms import CreatePartyForm, CreateTournamentForm
 from itertools import combinations
+from django.db import transaction
 import json, math, random
 
 @login_required(login_url='/users/login/')
@@ -109,20 +110,28 @@ def start_tournament(request, tournament_id):
         return HttpResponseForbidden("Only the creator can start the tournament.")
     if tournament.players.count() < 2:
         return HttpResponseBadRequest("Not enough participants to start the tournament.")
-    tournament.status = 'in_progress'
-    tournament.save()
-    create_matchups(tournament)
+
+    with transaction.atomic():
+        tournament.status = 'in_progress'
+        tournament.save()
+        create_matchups(tournament)  # Ensure this is a synchronous call
+
     return redirect('game:tournament_progress', tournament_id=tournament.id)
 
 @login_required(login_url='/users/login/')
 def tournament_progress(request, tournament_id):
     tournament = get_object_or_404(Tournament, id=tournament_id)
-    matches = tournament.matches.order_by('round_number', 'id')
-    return render(request, 'game/tournament_progress.html', {
+    matches = tournament.matches.all()  # assuming a related matches field
+
+    # Add a participant check to each match
+    for match in matches:
+        match.is_participant = request.user == match.player1 or request.user == match.player2
+
+    context = {
         'tournament': tournament,
         'matches': matches,
-        'tournament_id': tournament.id
-    })
+    }
+    return render(request, 'game/tournament_progress.html', context)
 
 def create_matchups(tournament):
     players = list(tournament.players.all())

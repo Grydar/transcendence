@@ -9,28 +9,39 @@
 <h2>Tournament Progress: {{ tournament.name }}</h2>
 <p>Status: {{ tournament.status }}</p>
 
-{% for match in matches %}
-    <div>
-        <strong>Round {{ match.round_number }}:</strong>
-        {% if match.player1 %}
-            {{ match.player1.username }}
+{% if tournament.status == 'completed' %}
+    <h3>The tournament has concluded.</h3>
+    {% with winner_match=matches.last %}
+        {% if winner_match.winner %}
+            <p>Winner: {{ winner_match.winner.username }}</p>
         {% else %}
-            <em>Bye</em>
+            <p>No winner could be determined.</p>
         {% endif %}
-        vs
-        {% if match.player2 %}
-            {{ match.player2.username }}
-        {% else %}
-            <em>Bye</em>
-        {% endif %}
-        - Status: {{ match.status }}
-        {% if match.status == 'completed' %}
+    {% endwith %}
+{% else %}
+    {% for match in matches %}
+        <div>
+            <strong>Round {{ match.round_number }}:</strong>
+            {% if match.player1 %}
+                {{ match.player1.username }}
+            {% else %}
+                <em>Bye</em>
+            {% endif %}
+            vs
+            {% if match.player2 %}
+                {{ match.player2.username }}
+            {% else %}
+                <em>Bye</em>
+            {% endif %}
+            - Status: {{ match.status }}
+            {% if match.status == 'completed' %}
             - Winner: {{ match.winner.username }}
-        {% elif match.status == 'pending' %}
-            - <a href="{% url 'game:play_match' tournament.id match.id %}">Play Now</a>
-        {% else %}
-            - <em>Waiting for players</em>
-        {% endif %}
-    </div>
-{% endfor %}
+            {% elif match.status == 'pending' and match.is_participant %}
+                - <a href="{% url 'game:play_match' tournament.id match.id %}">Play Now</a>
+            {% else %}
+                - <em>Waiting for players</em>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% endif %}
 {% endblock %}
