@@ -12,6 +12,9 @@ import json, math, random
 def lobby(request):
     if request.method == 'POST':
         form = CreatePartyForm(request.POST)
+        num_players = request.POST.get(num_players, None)
+        if num_players == 1:
+            return render(request, 'game/lobby.html', {'form': form, 'parties': parties, 'num_players': num_players})
         if form.is_valid():
             party = form.save(commit=False)
             party.creator = request.user
