@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 class Party(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE)
-    num_players = models.IntegerField(choices=[(2, '2 Players'), (3, '3 Players')], default=2)
+    num_players = models.IntegerField(choices=[(1, 'Play with AI'), (2, '2 Players'), (3, '3 Players')], default=2)
     nbPlayer = models.IntegerField(default=0)  # Start with 1 since the creator joins immediately
     status = models.CharField(
         max_length=20,

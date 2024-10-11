@@ -12,7 +12,7 @@
 <div>
     <form method="post" action="{% url 'game:lobby' %}">
         {% csrf_token %}
-        {{ form.as_p }}
+        {{ form.as_table }}
         <button type="submit">Create Party</button>
     </form>
 </div>
@@ -47,4 +47,20 @@
         </tbody>
     </table>
 </div>
+{% endblock %}
+{% block script %}
+<script>
+    const num_players = "{{ num_players|escapejs }}";
+    if (num_players === "1") {
+        const script = document.createElement('script');
+        script.src = "{% static 'aipong.js' %}";
+        script.defer = true;
+        document.head.appendChild(script);
+    } else {
+        const script = document.createElement('script');
+        script.src = "{% static 'pong.js' %}";
+        script.defer = true;
+        document.head.appendChild(script);
+    }
+</script>
 {% endblock %}
