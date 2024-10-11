@@ -4,17 +4,7 @@ const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
 let socketUrl = protocol + '://' + window.location.host + '/ws/pong/' + party_id + '/';
 console.log(`WebSocket URL: ${socketUrl}`);
 
-if (match_id) {
-    socketUrl += `${match_id}/`;
-}
-console.log(`WebSocket URL: ${socketUrl}`);
 const socket = new WebSocket(socketUrl);
-
-let userId = null;
-let isPlayerOne = false;
-
-let playerOneUsername = '';
-let playerTwoUsername = '';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -28,11 +18,20 @@ let paddle1Y = (canvas.height - paddleHeight) / 2;
 let paddle2Y = (canvas.height - paddleHeight) / 2;
 let ballX = canvas.width / 2;
 let ballY = canvas.height / 2;
+// test
+let ballSpeedX = 5;
+let ballSpeedY = 3;
+// fin test
 
 let upPressed = false;
 let downPressed = false;
 
 let gameStarted = false;
+
+//test
+let score1 = 0;
+let score2 = 0;
+// fin test
 
 const scoreBoard = document.createElement('div');
 scoreBoard.id = 'scoreBoard';
@@ -51,9 +50,6 @@ scoreBoard.style.fontSize = '24px';
 scoreBoard.style.textAlign = 'center';
 scoreBoard.style.marginBottom = '10px';
 document.getElementById('game-container').insertBefore(scoreBoard, canvas);
-
-let score1 = 0;
-let score2 = 0;
 
 // Event listeners for key presses
 document.addEventListener('keydown', keyDownHandler);
@@ -75,11 +71,30 @@ function keyUpHandler(e) {
     }
 }
 
-// WebSocket event handlers
-socket.onopen = function() {
-    console.log('WebSocket connection opened');
-};
+//test
+function startGame() {
+    document.getElementById('waiting-room').style.display = 'none'; // Hide waiting room
+    document.getElementById('game-container').style.display = 'block'; // Show game
 
+    gameStarted = true;
+    requestAnimationFrame(draw); // Start the game loop
+}
+
+function moveAI() {
+    
+    if (ballY > paddle2Y + paddleHeight / 2) {
+        paddle2Y += 5; // Move AI paddle down
+    } else if (ballY < paddle2Y + paddleHeight / 2) {
+        paddle2Y -= 5; // Move AI paddle up
+    }
+
+    // Prevent AI paddle from going off the screen
+    if (paddle2Y < 0) paddle2Y = 0;
+    if (paddle2Y + paddleHeight > canvas.height) paddle2Y = canvas.height - paddleHeight;
+}
+//fin test
+
+// WebSocket event handlers - Démarre le jeu
 function startCountdown(duration) {
     let countdownTime = duration;
 
@@ -194,15 +209,8 @@ socket.onmessage = function(event) {
 };
 
 function updateScoreBoard() {
-    let leftUsername, leftScore, rightUsername, rightScore;
-
-    leftUsername = playerOneUsername;
-    leftScore = score1;
-    rightUsername = playerTwoUsername;
-    rightScore = score2;
-
-    document.getElementById('leftScore').textContent = `${leftUsername}: ${leftScore}`;
-    document.getElementById('rightScore').textContent = `${rightUsername}: ${rightScore}`;
+    document.getElementById('leftScore').textContent = `Player: ${score1}`;
+    document.getElementById('rightScore').textContent = `AI: ${score2}`;
 }
 
 socket.onclose = function() {
@@ -244,32 +252,69 @@ function draw() {
 	ctx.fill();
 	ctx.closePath();
 
-	// Draw borders
-	ctx.strokeStyle = '#FFFFFF';
-	ctx.lineWidth = 2;
-	ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    //test
+    ballX += ballSpeedX;
+    ballY += ballSpeedY;
+    //fin test
 
-	// Move paddles based on key presses
-	if (upPressed) {
-		if (isPlayerOne) {
-			paddle1Y -= 7;
-			if (paddle1Y < 0) paddle1Y = 0;
-		} else {
-			paddle2Y -= 7;
-			if (paddle2Y < 0) paddle2Y = 0;
-		}
-		sendPaddlePosition();
-	}
-	if (downPressed) {
-		if (isPlayerOne) {
-			paddle1Y += 7;
-			if (paddle1Y + paddleHeight > canvas.height) paddle1Y = canvas.height - paddleHeight;
-		} else {
-			paddle2Y += 7;
-			if (paddle2Y + paddleHeight > canvas.height) paddle2Y = canvas.height - paddleHeight;
-		}
-		sendPaddlePosition();
-	}
+    //test
+     // Ball collision with top and bottom walls
+     if (ballY + ballRadius > canvas.height || ballY - ballRadius < 0) {
+        ballSpeedY = -ballSpeedY;
+    }
+
+    // Ball collision with player paddle
+    if (ballX - ballRadius < paddleWidth && ballY > paddle1Y && ballY < paddle1Y + paddleHeight) {
+        ballSpeedX = -ballSpeedX;
+    }
+
+    // Ball collision with AI paddle
+    if (ballX + ballRadius > canvas.width - paddleWidth && ballY > paddle2Y && ballY < paddle2Y + paddleHeight) {
+        ballSpeedX = -ballSpeedX;
+    }
+
+    // Ball goes off screen (left or right)
+    if (ballX - ballRadius < 0) {
+        score2++; // AI scores
+        resetBall();
+    }
+    if (ballX + ballRadius > canvas.width) {
+        score1++; // Player scores
+        resetBall();
+    }
+
+    // Update the score
+    updateScoreBoard();
+    //fin test
+
+    //test
+     // Move player paddle based on key presses
+     if (upPressed && paddle1Y > 0) {
+        paddle1Y -= 7;
+    } else if (downPressed && paddle1Y + paddleHeight < canvas.height) {
+        paddle1Y += 7;
+    }
+
+    // Move the AI paddle
+    moveAI();
+    //fin test
 
 	requestAnimationFrame(draw);
 }
+
+function resetBall() {
+    ballX = canvas.width / 2;
+    ballY = canvas.height / 2;
+    ballSpeedX = -ballSpeedX; // Change direction
+    ballSpeedY = (Math.random() > 0.5 ? 3 : -3); // Randomize the Y direction
+}
+
+// WebSocket event handlers (minimal, since there's no waiting)
+socket.onopen = function() {
+    console.log('WebSocket connection opened');
+    startGame(); // Start the game immediately
+};
+
+socket.onclose = function() {
+    console.log('WebSocket connection closed');
+};
