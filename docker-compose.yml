@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres
+    container_name: db
+    ports:
+        - "5432:5432"
+    env_file: .env
+    volumes:
+        - ./data/db:/var/lib/postgresql/data
+    restart: unless-stopped
+  
+  django:
+    container_name: django
+    build:
+      context: ./django
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file: .env
+    volumes:
+      - ./django:/django
+    restart: unless-stopped
+    
+  nginx:
+    container_name: nginx
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - django
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs
+    restart: unless-stopped

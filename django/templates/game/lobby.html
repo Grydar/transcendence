@@ -1,0 +1,50 @@
+{% extends 'home.html' %}
+{% load static %}
+
+{% block title %}
+    Lobby
+{% endblock %}
+
+{% block body %}
+<div class="lobby-menu">
+    <h3>Lobby menu</h3>
+</div>
+<div>
+    <form method="post" action="{% url 'game:lobby' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Create Party</button>
+    </form>
+</div>
+<div>
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Current Players</th>
+                <th scope="col">Number of Players</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for party in parties %}
+                {% if party.status == 'active' %}
+                    <tr>
+                        <th scope="row">{{ party.id }}</th>
+                        <td>{{ party.nbPlayer }}</td>
+                        <td>{{ party.num_players }}</td>
+                        <td><a href="{% url 'game:game' party.id %}">JOIN</a></td>
+                    </tr>
+                {% elif party.status == 'in_progress' %}
+                    <tr>
+                        <th scope="row">{{ party.id }}</th>
+                        <td>{{ party.nbPlayer }}</td>
+                        <td>{{ party.num_players }}</td>
+                        <td></td>
+                    </tr>    
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
