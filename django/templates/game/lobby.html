@@ -11,10 +11,46 @@
 </div>
 <div>
     <form method="post" action="{% url 'game:lobby' %}">
-        {% csrf_token %}
-        {{ form.as_table }}
-        <button type="submit">Create Party</button>
-    </form>
+		{% csrf_token %}
+		<!-- {{ form.as_table }} -->
+		
+		<label for="num_players">Select the number of players:</label>
+		<select id="num_players" name="num_players">
+			<option value="1">Play with AI</option>
+			<option value="2">2 Players</option>
+			<option value="3">3 Players</option>
+		</select>
+		
+		<button id="create-party-button" type="button">Create Party</button>
+	</form>
+	{% block script %}
+	<script>
+		document.getElementById('create-party-button').addEventListener('click', function(event) {
+			event.preventDefault();
+	
+			// Get the selected number of players from the dropdown
+			const num_players = document.getElementById('num_players').value;
+	
+			// Conditional logic to load the correct game script
+			if (num_players === "1") {
+				alert("PLAYING WITH AI");
+				const script = document.createElement('script');
+				script.src = "{% static 'pongIA.js' %}";
+				script.defer = true;
+				document.head.appendChild(script);
+			} else {
+				alert("PLAYING WITH OTHER HUMAN");
+				const script = document.createElement('script');
+				script.src = "{% static 'pong.js' %}";
+				script.defer = true;
+				document.head.appendChild(script);
+			}
+	
+			// Optionally, submit the form programmatically if needed
+			event.target.form.submit();
+		});
+	</script>
+	{% endblock %}
 </div>
 <div>
     <table>
@@ -47,20 +83,4 @@
         </tbody>
     </table>
 </div>
-{% endblock %}
-{% block script %}
-<script>
-    const num_players = "{{ num_players|escapejs }}";
-    if (num_players === "1") {
-        const script = document.createElement('script');
-        script.src = "{% static 'aipong.js' %}";
-        script.defer = true;
-        document.head.appendChild(script);
-    } else {
-        const script = document.createElement('script');
-        script.src = "{% static 'pong.js' %}";
-        script.defer = true;
-        document.head.appendChild(script);
-    }
-</script>
 {% endblock %}

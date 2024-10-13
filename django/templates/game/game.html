@@ -20,7 +20,22 @@
     const tournament_id = "{{ tournament_id|default_if_none:'' }}";
 </script>
 
-<script src="{% static 'pong.js' %}" defer></script>
+<script>
+if (num_players === "1") {
+	alert("PLAYING WITH AI");
+	const script = document.createElement('script');
+	script.src = "{% static 'pongIA.js' %}";
+	script.defer = true;
+	document.head.appendChild(script);
+} else {
+	alert("PLAYING WITH OTHER HUMAN");
+	const script = document.createElement('script');
+	script.src = "{% static 'pong.js' %}";
+	script.defer = true;
+	document.head.appendChild(script);
+}
+</script>
+
 {% endblock %}
 
 {% block body %}

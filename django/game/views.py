@@ -12,18 +12,40 @@ import json, math, random
 def lobby(request):
     if request.method == 'POST':
         form = CreatePartyForm(request.POST)
-        num_players = request.POST.get(num_players, None)
+        try:
+            # Convert num_players to an integer
+            num_players = int(request.POST.get('num_players', 0))  # Default to 0 if not provided
+        except ValueError:
+            num_players = 0  # Handle invalid input
+        
+        # Check if num_players is 1, otherwise proceed with form validation
         if num_players == 1:
-            return render(request, 'game/lobby.html', {'form': form, 'parties': parties, 'num_players': num_players})
+            # Create a party with AI
+            party = Party.objects.create(
+                creator=request.user,
+                num_players=num_players,
+                nbPlayer=1,  # The creator joins immediately
+                status='in_progress'  # Set status to in_progress
+            )
+            return redirect('game:game', party_id=party.id)  # Redirect to the game
+        
+        # If the form is valid, save the party
         if form.is_valid():
             party = form.save(commit=False)
             party.creator = request.user
             party.save()
-            return redirect('game:game', party_id=party.id)  # Redirect to game with party ID
+            return redirect('game:game', party_id=party.id)  # Redirect to the game
+
     else:
         form = CreatePartyForm()
+
+    # Handle GET request
     parties = Party.objects.exclude(status='completed')
-    return render(request, 'game/lobby.html', {'form': form, 'parties': parties})
+    return render(request, 'game/lobby.html', {
+        'form': form,
+        'parties': parties,
+        'num_players': None  # Default to None for GET request
+    })
 
 def game(request, party_id, match_id=None):
     party = get_object_or_404(Party, id=party_id)
