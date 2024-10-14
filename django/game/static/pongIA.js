@@ -42,7 +42,6 @@ document.getElementById('game-container').insertBefore(scoreBoard, canvas);
 // Game over message
 const gameOverMessage = document.createElement('div');
 gameOverMessage.id = 'gameOverMessage';
-gameOverMessage.style.color = 'red';
 gameOverMessage.style.fontSize = '32px';
 gameOverMessage.style.textAlign = 'center';
 gameOverMessage.style.display = 'none';

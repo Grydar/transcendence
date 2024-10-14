@@ -20,14 +20,13 @@ def lobby(request):
         
         # Check if num_players is 1, otherwise proceed with form validation
         if num_players == 1:
-            # Create a party with AI
-            party = Party.objects.create(
-                creator=request.user,
-                num_players=num_players,
-                nbPlayer=1,  # The creator joins immediately
-                status='in_progress'  # Set status to in_progress
-            )
-            return redirect('game:game', party_id=party.id)  # Redirect to the game
+            return render(request, 'game/game.html', {
+        		'party_id': 1,
+        		'match_id': 1,
+        		'tournament_id': 1,
+        		'user': request.user,
+        		'num_players': 1,
+    		})
         
         # If the form is valid, save the party
         if form.is_valid():
