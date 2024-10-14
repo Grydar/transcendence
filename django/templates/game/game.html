@@ -16,6 +16,8 @@
     const user = '{{ user.username|escapejs }}';
     const party_id = '{{ party_id|escapejs }}';
     const num_players = '{{ num_players|escapejs }}';
+    const match_id = "{{ match_id|default_if_none:'' }}";
+    const tournament_id = "{{ tournament_id|default_if_none:'' }}";
 </script>
 
 <script>

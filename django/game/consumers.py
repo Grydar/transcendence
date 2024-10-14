@@ -5,8 +5,11 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 from channels.db import database_sync_to_async
-from .models import Party, LeaderboardEntry
+from .models import Party, LeaderboardEntry, Tournament,TournamentMatch
+from django.db.models import Max
+import logging
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class PongConsumer(AsyncWebsocketConsumer):
@@ -27,6 +30,7 @@ class PongConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.party_id = self.scope['url_route']['kwargs']['party_id']
+        self.match_id = self.scope['url_route']['kwargs'].get('match_id', None)
         self.room_group_name = f'pong_{self.party_id}'
         self.game_loop_task = None
         self.user_id = self.scope['user'].id if self.scope['user'].is_authenticated else None
@@ -36,6 +40,10 @@ class PongConsumer(AsyncWebsocketConsumer):
         if self.num_players is None:
             await self.close()
             return
+
+        # Associate the party with the match if match_id is present
+        if self.match_id:
+            await self.associate_party_with_match(self.party_id, self.match_id)
 
         # Join the group
         await self.channel_layer.group_add(
@@ -282,6 +290,9 @@ class PongConsumer(AsyncWebsocketConsumer):
         # Create LeaderboardEntry for both players
         await self.create_leaderboard_entries(self.party_id, game_state['players'], scores)
 
+        if self.match_id:
+            await self.update_tournament_match(self.match_id, winner, scores)
+
         # Cancel the game loop task if it's still running
         if self.game_loop_task and not self.game_loop_task.done():
             self.game_loop_task.cancel()
@@ -396,3 +407,117 @@ class PongConsumer(AsyncWebsocketConsumer):
                 await database_sync_to_async(profile.save)()
             except User.DoesNotExist:
                 pass
+
+    async def update_tournament_match(self, match_id, winner, scores):
+        try:
+            logger.debug(f"Updating tournament match {match_id} with winner {winner}")
+            match = await database_sync_to_async(TournamentMatch.objects.get)(id=match_id)
+            winner_user = await database_sync_to_async(User.objects.get)(id=winner)
+            match.winner = winner_user
+            match.status = 'completed'
+            await database_sync_to_async(match.save)()
+
+            # Properly retrieve the tournament instance
+            tournament = await database_sync_to_async(Tournament.objects.get)(id=match.tournament_id)
+            await self.progress_tournament(tournament)
+        except TournamentMatch.DoesNotExist:
+            logger.error(f"TournamentMatch with id {match_id} does not exist.")
+        except User.DoesNotExist:
+            logger.error(f"User with id {winner} does not exist.")
+        except Exception as e:
+            logger.error(f"Error updating tournament match: {e}")
+
+    async def progress_tournament(self, tournament):
+        logger.debug(f"Progressing tournament {tournament.id}")
+        
+        # Get the current round number
+        current_round = await database_sync_to_async(
+            lambda: tournament.matches.aggregate(Max('round_number'))['round_number__max']
+        )()
+        logger.debug(f"Current round: {current_round}")
+        
+        # Check if all matches in the current round are completed
+        total_matches_in_current_round = await database_sync_to_async(
+            lambda: tournament.matches.filter(round_number=current_round).count()
+        )()
+        completed_matches_in_current_round = await database_sync_to_async(
+            lambda: tournament.matches.filter(round_number=current_round, status='completed').count()
+        )()
+        logger.debug(f"Total matches: {total_matches_in_current_round}, Completed matches: {completed_matches_in_current_round}")
+        
+        if completed_matches_in_current_round < total_matches_in_current_round:
+            logger.debug("Not all matches in the current round are completed.")
+            return  # Not all matches completed yet
+
+        # Get all winners from the completed matches in the current round
+        winners_data = await database_sync_to_async(
+            lambda: list(
+                tournament.matches.filter(round_number=current_round, status='completed')
+                .exclude(winner__isnull=True)
+                .values('winner_id', 'winner__username')
+            )
+        )()
+        logger.debug(f"Winners data: {winners_data}")
+        
+        # Now build list of winner User objects
+        winners = []
+        for data in winners_data:
+            winner_id = data['winner_id']
+            winner_username = data['winner__username']
+            # Create a User instance with the id and username
+            winner = User(id=winner_id, username=winner_username)
+            winners.append(winner)
+        logger.debug(f"Winners: {[winner.username for winner in winners]}")
+
+        # If only one winner remains, the tournament is completed
+        if len(winners) == 1:
+            tournament.status = 'completed'
+            await database_sync_to_async(tournament.save)()
+            logger.debug(f"Tournament {tournament.id} completed. Winner: {winners[0].username}")
+            return
+
+        # Create next round matchups
+        next_round = current_round + 1
+        logger.debug(f"Creating matches for round {next_round}")
+        for i in range(0, len(winners), 2):
+            player1 = winners[i]
+            player2 = winners[i+1] if (i+1) < len(winners) else None
+            if player1 and player2:
+                # Fetch full user objects asynchronously
+                player1_full = await database_sync_to_async(User.objects.get)(id=player1.id)
+                player2_full = await database_sync_to_async(User.objects.get)(id=player2.id)
+                await database_sync_to_async(TournamentMatch.objects.create)(
+                    tournament=tournament,
+                    player1=player1_full,
+                    player2=player2_full,
+                    status='pending',
+                    round_number=next_round
+                )
+                logger.debug(f"Match created: {player1.username} vs {player2.username}")
+            elif player1 and not player2:
+                # Fetch full user object asynchronously
+                player1_full = await database_sync_to_async(User.objects.get)(id=player1.id)
+                # Handle bye: player1 automatically advances
+                await database_sync_to_async(TournamentMatch.objects.create)(
+                    tournament=tournament,
+                    player1=player1_full,
+                    player2=None,
+                    winner=player1_full,
+                    status='completed',
+                    round_number=next_round
+                )
+                logger.debug(f"Player {player1.username} advances by bye")
+        # Recursive call to handle immediate progression
+        await self.progress_tournament(tournament)
+
+    @database_sync_to_async
+    def associate_party_with_match(self, party_id, match_id):
+        try:
+            match = TournamentMatch.objects.get(id=match_id)
+            party = Party.objects.get(id=party_id)
+            match.party = party
+            match.save()
+        except TournamentMatch.DoesNotExist:
+            pass
+        except Party.DoesNotExist:
+            pass
