@@ -81,16 +81,40 @@ function startGame() {
 }
 
 function moveAI() {
-    if (ballY > paddle2Y + paddleHeight / 2) {
-        paddle2Y += 5; // Move AI paddle down
-    } else if (ballY < paddle2Y + paddleHeight / 2) {
-        paddle2Y -= 5; // Move AI paddle up
+    let tempBallX = ballX;
+    let tempBallY = ballY;
+    let tempBallSpeedY = ballSpeedY;
+
+    // Predict the Y position of the ball when it reaches the AI paddle
+    let maxIterations = 1000; // Set a maximum number of iterations to prevent infinite loop
+    let iterations = 0;
+
+    while (tempBallX <= canvas.width - paddleWidth && iterations < maxIterations)
+	{
+        tempBallX += ballSpeedX;
+        tempBallY += tempBallSpeedY;
+
+        // Reverse ball Y direction when it hits top or bottom wall
+        if (tempBallY < 0 || tempBallY > canvas.height)
+            tempBallSpeedY = -tempBallSpeedY;
+        iterations++;
     }
 
+    let predictedY = tempBallY;
+    let paddleCenterY = paddle2Y + paddleHeight / 2;
+
+    if (paddleCenterY <= predictedY - 5)
+        paddle2Y += 5; // Move down
+    else if (paddleCenterY >= predictedY + 5)
+        paddle2Y -= 5; // Move up
+
     // Prevent AI paddle from going off the screen
-    if (paddle2Y < 0) paddle2Y = 0;
-    if (paddle2Y + paddleHeight > canvas.height) paddle2Y = canvas.height - paddleHeight;
+    if (paddle2Y < 0)
+			paddle2Y = 0;
+    if (paddle2Y + paddleHeight > canvas.height)
+			paddle2Y = canvas.height - paddleHeight;
 }
+
 
 function updateScoreBoard() {
     document.getElementById('leftScore').textContent = `Player: ${score1}`;

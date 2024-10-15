@@ -22,13 +22,13 @@
 
 <script>
 if (num_players === "1") {
-	alert("PLAYING WITH AI");
+	// alert("PLAYING WITH AI");
 	const script = document.createElement('script');
 	script.src = "{% static 'pongIA.js' %}";
 	script.defer = true;
 	document.head.appendChild(script);
 } else {
-	alert("PLAYING WITH OTHER HUMAN");
+	// alert("PLAYING WITH OTHER HUMAN");
 	const script = document.createElement('script');
 	script.src = "{% static 'pong.js' %}";
 	script.defer = true;
