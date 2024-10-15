@@ -80,7 +80,7 @@ function startGame() {
     requestAnimationFrame(draw); // Start the game loop
 }
 
-function moveAI() {
+function moveAI(random = false) {
     let tempBallX = ballX;
     let tempBallY = ballY;
     let tempBallSpeedY = ballSpeedY;
@@ -103,10 +103,20 @@ function moveAI() {
     let predictedY = tempBallY;
     let paddleCenterY = paddle2Y + paddleHeight / 2;
 
-    if (paddleCenterY <= predictedY - 5)
-        paddle2Y += 5; // Move down
-    else if (paddleCenterY >= predictedY + 5)
-        paddle2Y -= 5; // Move up
+	if (random === false)
+	{
+		if (paddleCenterY <= predictedY - 5)
+			paddle2Y += 5; // Move down
+		else if (paddleCenterY >= predictedY + 5)
+			paddle2Y -= 5; // Move up
+	}
+	else
+	{
+		if (paddleCenterY <= predictedY - 5)
+			paddle2Y -= 5;
+		else if (paddleCenterY >= predictedY + 5)
+			paddle2Y += 5;
+	}
 
     // Prevent AI paddle from going off the screen
     if (paddle2Y < 0)
@@ -187,8 +197,18 @@ function draw() {
         paddle1Y += 7;
     }
 
-    // Move the AI paddle
-    moveAI();
+	if (typeof draw.randomAI === 'undefined') {
+		draw.randomAI = 0;
+	}
+
+	draw.randomAI++;
+
+	if (draw.randomAI < 300)
+    	moveAI(false);
+	else if (draw.randomAI < 360)
+		moveAI(true);
+	else
+		draw.randomAI = 0;
 
     requestAnimationFrame(draw);
 }
