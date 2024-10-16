@@ -6,27 +6,29 @@
 {% endblock %}
 
 {% block body %}
-<div class="tournament-list">    
+<div class="tournament-list" >    
     <!-- Create Tournament Form -->
     <div class="create-tournament-form mb-4">
-        <h4>Create a New Tournament</h4>
+        <h3 class="text-center mb-3">Create a New Tournament</h3>
         <form method="post" action="{% url 'game:tournament_list' %}">
             {% csrf_token %}
             {{ create_tournament_form.as_p }}
-            <button type="submit" class="btn btn-primary">Create Tournament</button>
+            <div class="d-flex justify-content-center">
+                <button type="submit" class="btn btn-primary">Create Tournament</button>
+            </div>
         </form>
     </div>
 
     <!-- List of Tournaments -->
-    <h2>Available Tournaments</h2>
-    <table class="table table-striped">
+    <h3 class="mt-5 text-center">Available Tournaments</h3>
+    <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Players Joined</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th class="bg-primary">ID</th>
+                <th class="bg-primary">Name</th>
+                <th class="bg-primary">Players Joined</th>
+                <th class="bg-primary">Status</th>
+                <th class="bg-primary">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -37,12 +39,18 @@
                     <td>{{ tournament.players.count }}</td>
                     <td>{{ tournament.get_status_display }}</td>
                     <td>
-                        {% if request.user in tournament.players.all %}
-                            <span class="badge bg-success">Joined</span>
+                        {% if request.user in tournament.players.all and tournament.status != 'completed' %}
+                            <span class="badge bg-success me-2">Joined</span>
+                        {% elif tournament.status != 'waiting' %}
+                            <a></a>
                         {% else %}
-                            <a href="{% url 'game:join_tournament' tournament.id %}" class="btn btn-sm btn-secondary">Join</a>
+                            <a href="{% url 'game:join_tournament' tournament.id %}" class="btn btn-sm btn-secondary me-2">Join</a>
                         {% endif %}
-                        <a href="{% url 'game:tournament_detail' tournament.id %}" class="btn btn-sm btn-info">View</a>
+                        {% if tournament.status == 'completed' %}
+                            <a href="{% url 'game:tournament_progress' tournament.id %}" class="btn btn-sm btn-info">View</a>
+                        {% else %}
+                            <a href="{% url 'game:tournament_detail' tournament.id %}" class="btn btn-sm btn-info">Details</a>
+                        {% endif %}
                     </td>
                 </tr>
             {% empty %}

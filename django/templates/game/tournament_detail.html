@@ -6,13 +6,15 @@
 {% endblock %}
 
 {% block body %}
-<h2>{{ tournament.name }}</h2>
+<h2 class="mb-4">{{ tournament.name }}</h2>
+<div>
 <p>Players: {{ tournament.players.count }}</p>
 <ul>
     {% for players in tournament.players.all %}
     <li>{{ players.username }}</li>
     {% endfor %}
 </ul>
+</div>
 
 {% if can_start %}
 <form method="post" action="{% url 'game:start_tournament' tournament.id %}">

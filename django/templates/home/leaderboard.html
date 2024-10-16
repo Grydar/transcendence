@@ -16,7 +16,8 @@
 					<tr>
 						<th>Rank</th>
 						<th>Player</th>
-						<th>Score</th>
+						<th>Wins</th>
+						<th>Losses</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -28,6 +29,7 @@
 								<p>{{ user.username }}</p>
 							</td>
 							<td>{{ user.profile.wins }}</td>
+							<td>{{ user.profile.losses }}</td>
 						</tr>
 					{% endfor %}
 				</tbody>

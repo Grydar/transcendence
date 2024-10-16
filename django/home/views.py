@@ -18,7 +18,7 @@ def welcome(request):
 
 def leaderboard(request):
 	context = {
-		'all_users': User.objects.all(),
+		'all_users': User.objects.all().order_by('-profile__wins'),
 	}
 	if 'HTTP_HX_REQUEST' in request.META:
 		html = render_block_to_string('home/leaderboard.html', 'body', context)

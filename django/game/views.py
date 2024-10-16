@@ -100,7 +100,7 @@ def tournament_list(request):
     else:
         create_tournament_form = CreateTournamentForm()
 
-    tournaments = Tournament.objects.filter(status='waiting')
+    tournaments = Tournament.objects.all()
 
     return render(request, 'game/tournament_list.html', {
         'create_tournament_form': create_tournament_form,

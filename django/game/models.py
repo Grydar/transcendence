@@ -47,7 +47,7 @@ class Tournament(models.Model):
 class TournamentMatch(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='matches')
     player1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
-    player2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+    player2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+', null=True, blank=True)
     party = models.OneToOneField(Party, on_delete=models.SET_NULL, null=True, blank=True)
     winner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     status = models.CharField(

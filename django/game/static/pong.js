@@ -179,7 +179,7 @@ socket.onmessage = function(event) {
         gameoverMessage.style.height = canvas.height  - 32 + 'px';
         gameoverMessage.style.display = 'flex';
     
-        document.getElementById('gameover-text').textContent = data.message + ' Redirecting to lobby...';
+        document.getElementById('gameover-text').textContent = data.message + ' Redirecting...';
         // Optionally redirect or reset the game
         setTimeout(function() {
             if (match_id) {
