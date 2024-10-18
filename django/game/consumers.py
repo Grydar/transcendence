@@ -351,6 +351,7 @@ class PongConsumer(AsyncWebsocketConsumer):
 
     async def end_game(self, loser=None, winner=None):
         game_state = PongConsumer.game_states[self.room_group_name]
+        num_players = game_state['num_players']
         if winner is not None:
             # For 2-player game
             losers = [pid for pid in game_state['players'] if pid != winner]
@@ -375,6 +376,10 @@ class PongConsumer(AsyncWebsocketConsumer):
         )
         # Update user profiles
         await self.update_user_profiles(winners, losers)
+
+        # Create LeaderboardEntry for 2-player games
+        if num_players == 2:
+            await self.create_leaderboard_entry(game_state['players'], game_state['scores'])
 
         # Cancel the game loop task if it's still running
         if self.game_loop_task and not self.game_loop_task.done():
@@ -407,6 +412,34 @@ class PongConsumer(AsyncWebsocketConsumer):
             'message': message,
             'scores': scores,
         }))
+
+    async def create_leaderboard_entry(self, players, scores):
+        # Extract player IDs
+        player1_id = players[0]
+        player2_id = players[1]
+        player1_score = scores[player1_id]
+        player2_score = scores[player2_id]
+
+        # Get the party instance
+        party = await database_sync_to_async(Party.objects.get)(id=self.party_id)
+
+        # Create LeaderboardEntry for player1
+        await database_sync_to_async(LeaderboardEntry.objects.create)(
+            user_id=player1_id,
+            opponent_id=player2_id,
+            party=party,
+            player_score=player1_score,
+            opponent_score=player2_score
+        )
+
+        # Create LeaderboardEntry for player2
+        await database_sync_to_async(LeaderboardEntry.objects.create)(
+            user_id=player2_id,
+            opponent_id=player1_id,
+            party=party,
+            player_score=player2_score,
+            opponent_score=player1_score
+        )
 
     @database_sync_to_async
     def get_party_num_players(self, party_id):
