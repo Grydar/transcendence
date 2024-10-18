@@ -5,7 +5,7 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.contrib.auth import get_user_model
 from channels.db import database_sync_to_async
-from .models import Party, LeaderboardEntry, Tournament,TournamentMatch
+from .models import Party, LeaderboardEntry, Tournament, TournamentMatch
 from django.db.models import Max
 import logging
 
@@ -16,7 +16,7 @@ class PongConsumer(AsyncWebsocketConsumer):
     ball_radius = 10
     paddle_width = 10
     paddle_height = 100
-    game_loop = None
+    game_loop_task = None
 
     game_states = {}
 
@@ -60,13 +60,13 @@ class PongConsumer(AsyncWebsocketConsumer):
         if self.room_group_name not in PongConsumer.game_states:
             PongConsumer.game_states[self.room_group_name] = {
                 'players': [],
-                'paddle_positions': {},
+                'paddle_positions': {},  # Map user_id to paddle info
                 'scores': {},
                 'ball': {
                     'x': 400,
                     'y': 300,
-                    'speed_x': 10,
-                    'speed_y': 10,
+                    'speed_x': 5,
+                    'speed_y': 5,
                 },
                 'game_started': False,
                 'num_players': self.num_players,
@@ -78,7 +78,35 @@ class PongConsumer(AsyncWebsocketConsumer):
         # Add player to the game
         if self.user_id not in game_state['players'] and len(game_state['players']) < game_state['num_players']:
             game_state['players'].append(self.user_id)
-            game_state['paddle_positions'][self.user_id] = 250
+            # Initialize paddle positions based on player number
+            if len(game_state['players']) == 1:
+                # Player 1: Left paddle
+                paddle = {
+                    'x': 0,
+                    'y': (600 - self.paddle_height) / 2,
+                    'width': self.paddle_width,
+                    'height': self.paddle_height,
+                    'orientation': 'vertical',
+                }
+            elif len(game_state['players']) == 2:
+                # Player 2: Right paddle
+                paddle = {
+                    'x': 800 - self.paddle_width,
+                    'y': (600 - self.paddle_height) / 2,
+                    'width': self.paddle_width,
+                    'height': self.paddle_height,
+                    'orientation': 'vertical',
+                }
+            elif len(game_state['players']) == 3 and game_state['num_players'] == 3:
+                # Player 3: Top paddle
+                paddle = {
+                    'x': (800 - self.paddle_height) / 2,
+                    'y': 0,
+                    'width': self.paddle_height,  # Swap width and height
+                    'height': self.paddle_width,
+                    'orientation': 'horizontal',
+                }
+            game_state['paddle_positions'][self.user_id] = paddle
             game_state['scores'][self.user_id] = 0
 
         # Send user ID to the client
@@ -119,7 +147,7 @@ class PongConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
-    # Wrap the entire block in a try-except to catch KeyError
+        # Remove player from game state
         try:
             game_state = PongConsumer.game_states[self.room_group_name]
             if self.user_id in game_state.get('players', []):
@@ -139,9 +167,13 @@ class PongConsumer(AsyncWebsocketConsumer):
         action = data.get('action')
 
         if action == 'move_paddle':
-            paddleY = data.get('paddleY')
             game_state = PongConsumer.game_states[self.room_group_name]
-            game_state['paddle_positions'][self.user_id] = paddleY
+            paddle = game_state['paddle_positions'][self.user_id]
+            # Update paddle position based on orientation
+            if 'paddleY' in data:
+                paddle['y'] = data['paddleY']
+            if 'paddleX' in data:
+                paddle['x'] = data['paddleX']
 
     async def start_game(self, event):
         await self.send(text_data=json.dumps({
@@ -170,6 +202,7 @@ class PongConsumer(AsyncWebsocketConsumer):
         paddle_positions = game_state['paddle_positions']
         players = game_state['players']
         scores = game_state['scores']
+        num_players = game_state['num_players']
 
         # Define the maximum speed and speed increment
         max_speed = 15  # Maximum speed the ball can reach
@@ -180,68 +213,114 @@ class PongConsumer(AsyncWebsocketConsumer):
             ball['x'] += ball['speed_x']
             ball['y'] += ball['speed_y']
 
-            # Collision with top and bottom walls
-            if ball['y'] - self.ball_radius <= 0:
-                ball['y'] = self.ball_radius
-                ball['speed_y'] *= -1
+            # Collision with walls
+            if ball['x'] - self.ball_radius <= 0:
+                # Left boundary
+                if num_players == 2:
+                    scores[players[1]] += 1
+                else:
+                    scores[players[0]] -= 1
+                await self.reset_ball()
+                continue
+            elif ball['x'] + self.ball_radius >= 800:
+                # Right boundary
+                if num_players == 2:
+                    scores[players[0]] += 1
+                else:
+                    scores[players[1]] -= 1
+                await self.reset_ball()
+                continue
 
-            if ball['y'] + self.ball_radius >= 600:
-                ball['y'] = 600 - self.ball_radius
-                ball['speed_y'] *= -1
+            # For 3-player games, check top boundary
+            if num_players == 3:
+                if ball['y'] - self.ball_radius <= 0:
+                    # Top boundary (Player 3 missed)
+                    scores[players[2]] -= 1
+                    await self.reset_ball()
+                    continue
+                elif ball['y'] + self.ball_radius >= 600:
+                    # Bottom wall collision (bounce back)
+                    ball['y'] = 600 - self.ball_radius
+                    ball['speed_y'] *= -1
+            else:
+                # For 2-player games, bounce off top and bottom walls
+                if ball['y'] - self.ball_radius <= 0:
+                    ball['y'] = self.ball_radius
+                    ball['speed_y'] *= -1
+                elif ball['y'] + self.ball_radius >= 600:
+                    ball['y'] = 600 - self.ball_radius
+                    ball['speed_y'] *= -1
+
+            # Check for game over condition
+            if num_players == 2:
+                for player_id, score in scores.items():
+                    if score >= 5:
+                        await self.end_game(winner=player_id)
+                        return
+            else:
+                for player_id, score in scores.items():
+                    if score <= -5:
+                        await self.end_game(loser=player_id)
+                        return
 
             # Collision with paddles
-            # Player one paddle collision
-            if ball['x'] - self.ball_radius <= self.paddle_width:
-                paddle1Y = paddle_positions.get(players[0], 250)
-                if paddle1Y <= ball['y'] <= paddle1Y + self.paddle_height:
-                    ball['x'] = self.paddle_width + self.ball_radius
-                    ball['speed_x'] *= -1
-
+            for player_id in players:
+                paddle = paddle_positions[player_id]
+                if self.check_ball_paddle_collision(ball, paddle):
+                    if paddle['orientation'] == 'vertical':
+                        # Reverse speed_x
+                        ball['speed_x'] *= -1
+                        # Adjust ball's x position to prevent sticking
+                        if ball['x'] < 400:
+                            # Left paddle
+                            ball['x'] = paddle['x'] + paddle['width'] + self.ball_radius
+                        else:
+                            # Right paddle
+                            ball['x'] = paddle['x'] - self.ball_radius
+                    elif paddle['orientation'] == 'horizontal' and num_players == 3:
+                        # Reverse speed_y
+                        ball['speed_y'] *= -1
+                        # Adjust ball's y position to prevent sticking
+                        ball['y'] = paddle['y'] + paddle['height'] + self.ball_radius
                     # Increase ball speed
-                    ball['speed_x'], ball['speed_y'] = self.increase_ball_speed(ball['speed_x'], ball['speed_y'], max_speed, speed_increment)
+                    ball['speed_x'], ball['speed_y'] = self.increase_ball_speed(
+                        ball['speed_x'], ball['speed_y'], max_speed, speed_increment
+                    )
 
-                else:
-                    # Player two scores
-                    scores[players[1]] += 1
-                    if scores[players[1]] >= 5:
-                        await self.end_game(winner=players[1], scores=scores)
-                        break
-                    else:
-                        await self.reset_ball()
-            # Player two paddle collision
-            elif ball['x'] + self.ball_radius >= 800 - self.paddle_width:
-                paddle2Y = paddle_positions.get(players[1], 250)
-                if paddle2Y <= ball['y'] <= paddle2Y + self.paddle_height:
-                    ball['x'] = 800 - self.paddle_width - self.ball_radius
-                    ball['speed_x'] *= -1
-
-                    # Increase ball speed
-                    ball['speed_x'], ball['speed_y'] = self.increase_ball_speed(ball['speed_x'], ball['speed_y'], max_speed, speed_increment)
-
-                else:
-                    # Player one scores
-                    scores[players[0]] += 1
-                    if scores[players[0]] >= 5:
-                        await self.end_game(winner=players[0], scores=scores)
-                        break
-                    else:
-                        await self.reset_ball()
-
-            # Broadcast the game state to both players
+            # Broadcast the game state to all players
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': 'update_state',
                     'ballX': ball['x'],
                     'ballY': ball['y'],
-                    'paddle1Y': paddle_positions.get(players[0], 250),
-                    'paddle2Y': paddle_positions.get(players[1], 250),
-                    'score1': scores[players[0]],
-                    'score2': scores[players[1]],
+                    'paddles': paddle_positions,
+                    'scores': scores,
                 }
             )
 
-            await asyncio.sleep(0.016)  # Approximately 60 frames per second
+            await asyncio.sleep(0.016)
+
+    def check_ball_paddle_collision(self, ball, paddle):
+        if paddle['orientation'] == 'vertical':
+            # Vertical paddle collision detection
+            if (
+                ball['x'] - self.ball_radius <= paddle['x'] + paddle['width'] and
+                ball['x'] + self.ball_radius >= paddle['x'] and
+                ball['y'] + self.ball_radius >= paddle['y'] and
+                ball['y'] - self.ball_radius <= paddle['y'] + paddle['height']
+            ):
+                return True
+        elif paddle['orientation'] == 'horizontal':
+            # Horizontal paddle collision detection
+            if (
+                ball['y'] - self.ball_radius <= paddle['y'] + paddle['height'] and
+                ball['y'] + self.ball_radius >= paddle['y'] and
+                ball['x'] + self.ball_radius >= paddle['x'] and
+                ball['x'] - self.ball_radius <= paddle['x'] + paddle['width']
+            ):
+                return True
+        return False
 
     async def reset_ball(self):
         # Reset the ball to the center
@@ -251,10 +330,10 @@ class PongConsumer(AsyncWebsocketConsumer):
         ball['y'] = 300
 
         # Reset ball speed to initial values
-        initial_speed_x = 10
-        initial_speed_y = 10
+        initial_speed_x = 5
+        initial_speed_y = 5
 
-        # Invert direction of speed_x to alternate serving player
+        # Randomize initial direction
         ball['speed_x'] = initial_speed_x if ball['speed_x'] < 0 else -initial_speed_x
         ball['speed_y'] = initial_speed_y
 
@@ -266,32 +345,36 @@ class PongConsumer(AsyncWebsocketConsumer):
             'action': 'update_state',
             'ballX': event['ballX'],
             'ballY': event['ballY'],
-            'paddle1Y': event['paddle1Y'],
-            'paddle2Y': event['paddle2Y'],
-            'score1': event['score1'],
-            'score2': event['score2'],
+            'paddles': event['paddles'],
+            'scores': event['scores'],
         }))
 
-    async def end_game(self, winner, scores):
-        # Notify players about the game result
+    async def end_game(self, loser=None, winner=None):
         game_state = PongConsumer.game_states[self.room_group_name]
+        if winner is not None:
+            # For 2-player game
+            losers = [pid for pid in game_state['players'] if pid != winner]
+            winners = [winner]
+        elif loser is not None:
+            # For 3-player game
+            winners = [pid for pid in game_state['players'] if pid != loser]
+            losers = [loser]
+        else:
+            # Should not happen
+            return
+
+        # Notify players about the game result
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'game_over',
-                'winner': winner,
-                'scores': scores,
-                'players': game_state['players'],  # Include players in the event
+                'winners': winners,
+                'losers': losers,
+                'scores': game_state['scores'],
             }
         )
         # Update user profiles
-        await self.update_user_profiles(winner, scores)
-
-        # Create LeaderboardEntry for both players
-        await self.create_leaderboard_entries(self.party_id, game_state['players'], scores)
-
-        if self.match_id:
-            await self.update_tournament_match(self.match_id, winner, scores)
+        await self.update_user_profiles(winners, losers)
 
         # Cancel the game loop task if it's still running
         if self.game_loop_task and not self.game_loop_task.done():
@@ -310,15 +393,19 @@ class PongConsumer(AsyncWebsocketConsumer):
         # Set party status to 'completed'
         await self.set_party_completed(self.party_id)
 
+
     async def game_over(self, event):
-        winner = event['winner']
+        winners = event['winners']
+        losers = event['losers']
         scores = event['scores']
-        players = event['players']  # Retrieve the list of players
+        if self.user_id in winners:
+            message = 'You win!'
+        else:
+            message = 'You lose!'
         await self.send(text_data=json.dumps({
             'action': 'game_over',
-            'message': 'You win!' if self.user_id == winner else 'You lose!',
-            'score1': scores[players[0]],  # Ensure score1 corresponds to players[0]
-            'score2': scores[players[1]],  # Ensure score2 corresponds to players[1]
+            'message': message,
+            'scores': scores,
         }))
 
     @database_sync_to_async
@@ -361,154 +448,23 @@ class PongConsumer(AsyncWebsocketConsumer):
         except Party.DoesNotExist:
             pass
 
-    @database_sync_to_async
-    def create_leaderboard_entries(self, party_id, players, scores):
-        try:
-            party = Party.objects.get(id=party_id)
-            if len(players) != 2:
-                print("Not a two-player game, cannot create LeaderboardEntry")
-                return
-            player1_id, player2_id = players
-            user1 = User.objects.get(id=player1_id)
-            user2 = User.objects.get(id=player2_id)
-            score1 = scores[player1_id]
-            score2 = scores[player2_id]
-
-            # Create LeaderboardEntry for player1
-            LeaderboardEntry.objects.create(
-                user=user1,
-                opponent=user2,
-                party=party,
-                player_score=score1,
-                opponent_score=score2
-            )
-            # Create LeaderboardEntry for player2
-            LeaderboardEntry.objects.create(
-                user=user2,
-                opponent=user1,
-                party=party,
-                player_score=score2,
-                opponent_score=score1
-            )
-        except Exception as e:
-            print(f"Error creating LeaderboardEntry: {e}")
-
-    async def update_user_profiles(self, winner_id, scores):
-        # Update win/lose data in user profiles
-        players = [winner_id] + [uid for uid in scores if uid != winner_id]
-        for user_id in players:
+    async def update_user_profiles(self, winners, losers):
+        for user_id in winners:
             try:
                 user = await database_sync_to_async(User.objects.get)(id=user_id)
                 profile = await database_sync_to_async(lambda: user.profile)()
-                if user_id == winner_id:
-                    profile.wins += 1
-                else:
-                    profile.losses += 1
+                profile.wins += 1
                 await database_sync_to_async(profile.save)()
             except User.DoesNotExist:
                 pass
-
-    async def update_tournament_match(self, match_id, winner, scores):
-        try:
-            logger.debug(f"Updating tournament match {match_id} with winner {winner}")
-            match = await database_sync_to_async(TournamentMatch.objects.get)(id=match_id)
-            winner_user = await database_sync_to_async(User.objects.get)(id=winner)
-            match.winner = winner_user
-            match.status = 'completed'
-            await database_sync_to_async(match.save)()
-
-            # Properly retrieve the tournament instance
-            tournament = await database_sync_to_async(Tournament.objects.get)(id=match.tournament_id)
-            await self.progress_tournament(tournament)
-        except TournamentMatch.DoesNotExist:
-            logger.error(f"TournamentMatch with id {match_id} does not exist.")
-        except User.DoesNotExist:
-            logger.error(f"User with id {winner} does not exist.")
-        except Exception as e:
-            logger.error(f"Error updating tournament match: {e}")
-
-    async def progress_tournament(self, tournament):
-        logger.debug(f"Progressing tournament {tournament.id}")
-        
-        # Get the current round number
-        current_round = await database_sync_to_async(
-            lambda: tournament.matches.aggregate(Max('round_number'))['round_number__max']
-        )()
-        logger.debug(f"Current round: {current_round}")
-        
-        # Check if all matches in the current round are completed
-        total_matches_in_current_round = await database_sync_to_async(
-            lambda: tournament.matches.filter(round_number=current_round).count()
-        )()
-        completed_matches_in_current_round = await database_sync_to_async(
-            lambda: tournament.matches.filter(round_number=current_round, status='completed').count()
-        )()
-        logger.debug(f"Total matches: {total_matches_in_current_round}, Completed matches: {completed_matches_in_current_round}")
-        
-        if completed_matches_in_current_round < total_matches_in_current_round:
-            logger.debug("Not all matches in the current round are completed.")
-            return  # Not all matches completed yet
-
-        # Get all winners from the completed matches in the current round
-        winners_data = await database_sync_to_async(
-            lambda: list(
-                tournament.matches.filter(round_number=current_round, status='completed')
-                .exclude(winner__isnull=True)
-                .values('winner_id', 'winner__username')
-            )
-        )()
-        logger.debug(f"Winners data: {winners_data}")
-        
-        # Now build list of winner User objects
-        winners = []
-        for data in winners_data:
-            winner_id = data['winner_id']
-            winner_username = data['winner__username']
-            # Create a User instance with the id and username
-            winner = User(id=winner_id, username=winner_username)
-            winners.append(winner)
-        logger.debug(f"Winners: {[winner.username for winner in winners]}")
-
-        # If only one winner remains, the tournament is completed
-        if len(winners) == 1:
-            tournament.status = 'completed'
-            await database_sync_to_async(tournament.save)()
-            logger.debug(f"Tournament {tournament.id} completed. Winner: {winners[0].username}")
-            return
-
-        # Create next round matchups
-        next_round = current_round + 1
-        logger.debug(f"Creating matches for round {next_round}")
-        for i in range(0, len(winners), 2):
-            player1 = winners[i]
-            player2 = winners[i+1] if (i+1) < len(winners) else None
-            if player1 and player2:
-                # Fetch full user objects asynchronously
-                player1_full = await database_sync_to_async(User.objects.get)(id=player1.id)
-                player2_full = await database_sync_to_async(User.objects.get)(id=player2.id)
-                await database_sync_to_async(TournamentMatch.objects.create)(
-                    tournament=tournament,
-                    player1=player1_full,
-                    player2=player2_full,
-                    status='pending',
-                    round_number=next_round
-                )
-                logger.debug(f"Match created: {player1.username} vs {player2.username}")
-            elif player1 and not player2:
-                # Fetch full user object asynchronously
-                player1_full = await database_sync_to_async(User.objects.get)(id=player1.id)
-                # Handle bye: player1 automatically advances
-                await database_sync_to_async(TournamentMatch.objects.create)(
-                    tournament=tournament,
-                    player1=player1_full,
-                    player2=None,
-                    winner=player1_full,
-                    status='completed',
-                    round_number=next_round
-                )
-                logger.debug(f"Player {player1.username} advances by bye")
-        # Recursive call to handle immediate progression
-        await self.progress_tournament(tournament)
+        for user_id in losers:
+            try:
+                user = await database_sync_to_async(User.objects.get)(id=user_id)
+                profile = await database_sync_to_async(lambda: user.profile)()
+                profile.losses += 1
+                await database_sync_to_async(profile.save)()
+            except User.DoesNotExist:
+                pass
 
     @database_sync_to_async
     def associate_party_with_match(self, party_id, match_id):
