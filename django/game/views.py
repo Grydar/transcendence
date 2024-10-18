@@ -12,21 +12,21 @@ import json, math, random
 def lobby(request):
     if request.method == 'POST':
         form = CreatePartyForm(request.POST)
-        try:
-            # Convert num_players to an integer
-            num_players = int(request.POST.get('num_players', 0))  # Default to 0 if not provided
-        except ValueError:
-            num_players = 0  # Handle invalid input
+        # try:
+        #     # Convert num_players to an integer
+        #     num_players = int(request.POST.get('num_players', 0))  # Default to 0 if not provided
+        # except ValueError:
+        #     num_players = 0  # Handle invalid input
         
-        # Check if num_players is 1, otherwise proceed with form validation
-        if num_players == 1:
-            return render(request, 'game/game.html', {
-        		'party_id': 1,
-        		'match_id': 1,
-        		'tournament_id': 1,
-        		'user': request.user,
-        		'num_players': 1,
-    		})
+        # # Check if num_players is 1, otherwise proceed with form validation
+        # if num_players == 1:
+        #     return render(request, 'game/game.html', {
+        # 		'party_id': 1,
+        # 		'match_id': 1,
+        # 		'tournament_id': 1,
+        # 		'user': request.user,
+        # 		'num_players': 1,
+    	# 	})
         
         # If the form is valid, save the party
         if form.is_valid():

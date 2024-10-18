@@ -60,3 +60,26 @@ class TournamentMatch(models.Model):
 
     def __str__(self):
         return f"Match: {self.player1.username} vs {self.player2.username} ({self.tournament.name})"
+
+class UserStats(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    wins = models.IntegerField(default=0)
+    losses = models.IntegerField(default=0)
+    times_ball_hit = models.IntegerField(default=0)
+    
+    def __str__(self):
+        return f"Statistics for {self.user}."
+
+class GameStats(models.Model):
+    total_ball_hits = models.IntegerField(default=0)
+    match_start_time = models.TimeField(auto_now_add=True)
+    match_end_time = models.TimeField(auto_now_add=True)
+    player1 = models.ForeignKey(User, related_name="game_player1", on_delete=models.CASCADE)
+    player2 = models.ForeignKey(User, related_name="game_player2", on_delete=models.CASCADE, null=True, blank=True)
+    winner = models.ForeignKey(User, related_name="game_winner", on_delete=models.SET_NULL, null=True)
+    
+    def match_duration(self):
+        return self.match_end_time - self.match_start_time
+
+    def __str__(self):
+        return f"Game between {self.player1.username} and {self.player2.username or "AI"}"
