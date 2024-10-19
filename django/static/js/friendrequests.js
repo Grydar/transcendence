@@ -271,6 +271,18 @@ function createBlockUnblockBtn(id, type) {
     return btn
 }
 
+function createMessageBtn() {
+    var dm_btn = document.createElement("button");
+    dm_btn.innerHTML = "Message";
+    dm_btn.className = "btn_requests";
+
+    var anchor = document.createElement("a");
+    anchor.href = "/chat";
+    anchor.appendChild(dm_btn);
+
+    return anchor;
+}
+
 /* HELPER FUNCTIONS */
 
 function capitalize(str) {

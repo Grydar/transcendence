@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'game',
     'users',
     'channels',
+    'chat',
 ]
 
 ASGI_APPLICATION = 'project.asgi.application'

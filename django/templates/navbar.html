@@ -18,6 +18,7 @@
                         <li><a href="{% url 'home:welcome' %}" hx-target="#app-root">Home</a></li>
                         <li><a href="{% url 'home:leaderboard' %}" hx-target="#app-root">Leaderboard</a></li>
                         <li><a href="{% url 'game:lobby' %}" hx-target="#app-root">Game</a></li>
+                        <li><a href="/chat/" hx-target="#app-root">Chat</a></li>
                         <li><a href="{% url 'game:tournament_list' %}" hx-target="#app-root">Tournaments</a></li>
                         <li><a href="{% url 'users:profile' %}{{request.user.username}}" hx-target="#app-root">Profile</a></li>
                     {% endif %}
