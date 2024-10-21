@@ -430,11 +430,19 @@ def remove_friend(request) -> HttpResponse:
 def blocking(request) -> HttpResponse:
     current_user = request.user
     blocklist = current_user.profile.blocklist
-    action = request.GET.get("action")
+    action = request.GET.get("action") or request.POST.get("action")
     payload = {}
 
     if current_user.is_authenticated:
-        user_id = request.GET.get("user_id")
+        if request.method == "POST":
+            try:
+                data = json.loads(request.body)
+                user_id = data.get("user_id")  # Assurez-vous de récupérer le user_id correctement du body
+                action = data.get("action")
+            except json.JSONDecodeError:
+                user_id = None
+        else:
+            user_id = request.GET.get("user_id")
         if user_id:
             target_user = User.objects.get(pk=user_id)
 

@@ -242,29 +242,58 @@ Chat
             alert('Error: ' + data.message);
         }
     });
-});
+  });
 
-// Function to get CSRF token from cookies
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i=0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length+1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length+1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
 
   document.getElementById('blockUser').addEventListener('click', function() {
-      // Code to block a user
-      alert('Block user clicked!');
+      const otherUserId = '{{ other_user_id }}';
+      const action = 'block';
+      const url = "{% url 'users:blocking' %}";
+      const csrftoken = getCookie('csrftoken');
+
+      fetch(url, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+              'user_id': otherUserId,
+              'action': action
+          })
+      })
+      .then(response => response.json())
+      .then(data => {
+          alert(data.response);
+          // Optionally disable input fields or redirect
+          document.querySelector("#id_message_send_input").disabled = true;
+          document.querySelector("#id_message_send_button").disabled = true;
+
+          // Optionally, redirect to the chat home or another page
+          // window.location.href = "{% url 'chat:home' %}";
+      })
+      .catch((error) => {
+          console.error('Error:', error);
+      });
   });
+
+  // Function to get CSRF token from cookies
+  function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i=0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length+1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length+1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
 
   updateChatHeader();
 
