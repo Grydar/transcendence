@@ -53,6 +53,7 @@ Chat
       display: flex;
       cursor: pointer;
       background-color: #ddd;
+      color: #282633;
       border: none;
       padding: 5px 10px;
       border-radius: 5px;
@@ -64,6 +65,7 @@ Chat
   .back-button {
       cursor: pointer;
       background-color: #ddd;
+      color:#282633;
       border: none;
       padding: 5px 10px;
       border-radius: 5px;
@@ -179,18 +181,38 @@ Chat
 
   chatSocket.onmessage = function (e) {
     const data = JSON.parse(e.data);
-    const messageElement = document.createElement("div");
-    messageElement.innerText = data.message;
 
-    // Apply different classes based on the sender
-    if (data.username === username) {
-      messageElement.className = "message own-message";
-    } else {
-      messageElement.className = "message other-message";
+    if (data.type === 'chat_message') {
+        // Existing chat message handling
+        const messageElement = document.createElement("div");
+        messageElement.innerText = data.message;
+
+        if (data.username === username) {
+            messageElement.className = "message own-message";
+        } else {
+            messageElement.className = "message other-message";
+        }
+
+        document.querySelector("#id_chat_item_container").appendChild(messageElement);
+    } else if (data.type === 'game_invite') {
+        // Handle game invitation
+        const sender = data.sender;
+        const recipient = data.recipient;
+        const party_id = data.party_id;
+
+        // Show a prompt to accept or decline the game invitation
+        if (username === recipient) {
+          const accept = confirm(`${sender} has invited you to a game. Do you accept?`);
+          if (accept) {
+              // Redirect to the game page
+              window.location.href = `/game/${party_id}/`;
+          } else {
+              // Optionally, send a decline message back (not implemented here)
+          }
+        }
     }
-
-    document.querySelector("#id_chat_item_container").appendChild(messageElement);
   };
+
 
   function updateChatHeader() {
       const usernames = roomSlug.split('_'); // Split the slug to get both usernames
@@ -202,9 +224,42 @@ Chat
   }
 
   document.getElementById('invitePlayer').addEventListener('click', function() {
-      // Code to invite a player
-      alert('Invite player clicked!');
-  });
+    // Send an AJAX request to create a new game and send an invitation
+    fetch('/chat/send_game_invite/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ 'room_slug': roomSlug })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Redirect to the game page
+            window.location.href = `/game/${data.party_id}/`;
+        } else {
+            alert('Error: ' + data.message);
+        }
+    });
+});
+
+// Function to get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i=0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length+1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length+1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 
   document.getElementById('blockUser').addEventListener('click', function() {
       // Code to block a user
