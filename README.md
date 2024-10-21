@@ -24,7 +24,6 @@ Ensure you have the following environment variables set in your `.env` file:
 POSTGRES_DB=example
 POSTGRES_USER=example
 POSTGRES_PASSWORD=example
-POSTGRES_EMAIL=example
 CLIENT_ID=#42 Api UID Key
 CLIENT_SECRET=#42 Api Secret Key
 ```
