@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import game, lobby, submit_game_result, join_tournament, tournament_detail, start_tournament, tournament_list, tournament_progress, play_match
+from .views import game, lobby, submit_game_result, submit_stats, view_game_stats, join_tournament, tournament_detail, start_tournament, tournament_list, tournament_progress, play_match
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -10,6 +10,8 @@ urlpatterns = [
     path('<int:party_id>/', game, name='game'),  # Game page with party ID
     path('lobby/', lobby, name='lobby'),  # Lobby page
     path('submit_result/', submit_game_result, name='submit_game_result'),  # New endpoint
+	path('<int:match_id>/submit_stats/', submit_stats, name='submit_stats'),
+	path('<int:match_id>/stats/', view_game_stats, name='view_game_stats'),
 	
     # Tournament URLs
     path('tournaments/', tournament_list, name='tournament_list'),

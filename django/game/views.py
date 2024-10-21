@@ -1,32 +1,20 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.views.decorators.http import require_POST
-from .models import Party, LeaderboardEntry, Tournament, TournamentMatch
+from django.views.decorators.csrf import csrf_exempt
+from .models import Party, LeaderboardEntry, Tournament, TournamentMatch, GameStats, UserStats
 from .forms import CreatePartyForm, CreateTournamentForm
 from itertools import combinations
 from django.db import transaction
+from datetime import timedelta
 import json, math, random
 
 @login_required(login_url='/users/login/')
 def lobby(request):
     if request.method == 'POST':
         form = CreatePartyForm(request.POST)
-        # try:
-        #     # Convert num_players to an integer
-        #     num_players = int(request.POST.get('num_players', 0))  # Default to 0 if not provided
-        # except ValueError:
-        #     num_players = 0  # Handle invalid input
-        
-        # # Check if num_players is 1, otherwise proceed with form validation
-        # if num_players == 1:
-        #     return render(request, 'game/game.html', {
-        # 		'party_id': 1,
-        # 		'match_id': 1,
-        # 		'tournament_id': 1,
-        # 		'user': request.user,
-        # 		'num_players': 1,
-    	# 	})
         
         # If the form is valid, save the party
         if form.is_valid():
@@ -59,6 +47,65 @@ def game(request, party_id, match_id=None):
         'user': request.user,
         'num_players': party.num_players,
     })
+
+@csrf_exempt #temporary, remove once csrf token is added
+@require_POST
+# @login_required('login_url=/users/login/')
+def submit_stats(request, match_id):
+    try:
+        data = json.loads(request.body)
+        player1Score = data.get('player1Score')
+        player2Score = data.get('player2Score')
+        winner = data.get('winner')
+        player1BallHits = data.get('player1BallHits')
+        player2BallHits = data.get('player2BallHits')
+        totalBallHits = data.get('totalBallHits')
+        matchDuration = data.get('matchDuration')
+        # match_id = data.get('match_id')
+        
+        # temp = GameStats.objects.get(match_id=match_id)
+        
+        game = GameStats.objects.create(
+            player1=request.user,
+            player2=User.objects.get(id=data.get('player2_id')),
+            winner=winner,
+            total_ball_hits=totalBallHits,
+            match_duration=matchDuration,
+            match_id=match_id
+		)
+        
+        player1_stats = UserStats.objects.get(user=request.user)
+        player2_stats = UserStats.objects.get(user=game.player2)
+        
+        player1_stats.times_ball_hit += player1BallHits
+        player2_stats.times_ball_hit += player2BallHits
+        
+        player1_stats.total_score += player1Score
+        player2_stats.total_score += player2Score
+
+        if winner == player1_stats.user:
+            player1_stats.wins += 1
+            player2_stats.losses += 1
+        elif winner == player2_stats.user:
+            player2_stats.wins += 1
+            player1_stats.losses += 1
+            
+        player1_stats.save()
+        player2_stats.save()
+        game.save()
+
+        return JsonResponse({'status': 'success', "match_id": game.match_id})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+@login_required(login_url='/users/login/')
+def view_game_stats(request, match_id):
+    if request.method == 'GET':
+        game = get_object_or_404(GameStats, match_id=match_id)
+        return render(request, 'game/gamestats.html',
+                      {
+                          'game':game
+					  })
 
 @require_POST
 @login_required(login_url='/users/login/')

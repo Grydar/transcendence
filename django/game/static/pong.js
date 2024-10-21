@@ -55,6 +55,68 @@ document.getElementById('game-container').insertBefore(scoreBoard, canvas);
 let score1 = 0;
 let score2 = 0;
 
+// Game/User stats
+let player1BallHits = 0;
+let player2BallHits = 0;
+let winner = null;
+let matchStartTime = null;
+// let matchEndTime = null;
+// matchEndTime = Date.now();
+let matchDuration = null;
+
+// Function to get CSRF token from meta tag
+function getCSRFToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+}
+
+// Sends statistics to backend for user/game stats module
+function endGame(data)
+{
+	winner = data.winner;
+	matchDuration = (Date.now() - matchStartTime) / 1000;
+
+	const url = window.location.href;
+	const parts = url.split('/');
+	const match_id = parts[4];
+
+	// alert('url: ' + url);
+	// alert('match id: ' + match_id);
+	
+	let gameData = {
+		'player1BallHits': player1BallHits,
+		'player2BallHits': player2BallHits,
+		'totalBallHits': player1BallHits + player2BallHits,
+		'winner': winner,
+		'matchDuration': matchDuration,
+		'player1Score': score1,
+		'player2Score': score2,
+		'match_id': match_id,
+	};
+
+    //HTTP request to send new data to db
+	fetch('submit_stats/',
+	{
+		method: 'POST',
+		headers:
+		{
+			'Content-Type': 'application/json',
+			'X-CSRFToken': getCSRFToken()
+		},
+		body: JSON.stringify(gameData)
+	})
+	.then(response => response.json())
+	.then(data =>
+	{
+		// const match_id = data.match_id;
+		window.location.href = `/game/${match_id}/stats/`;
+		console.log('Game data submitted successfully');
+	})
+	.catch((error) => 
+	{
+		console.error('Error:', error);
+	});
+}
+
 // Event listeners for key presses
 document.addEventListener('keydown', keyDownHandler);
 document.addEventListener('keyup', keyUpHandler);
@@ -101,6 +163,7 @@ function startCountdown(duration) {
             // Wait a moment before starting the game to show 'GO!'
             setTimeout(function() {
                 gameStarted = true;
+				matchStartTime = Date.now();
                 requestAnimationFrame(draw);
             }, 500);
         }
@@ -180,15 +243,18 @@ socket.onmessage = function(event) {
         gameoverMessage.style.display = 'flex';
     
         document.getElementById('gameover-text').textContent = data.message + ' Redirecting to lobby...';
-        // Optionally redirect or reset the game
+        
+		endGame(data);
+		
+		// Optionally redirect or reset the game
         setTimeout(function() {
             if (match_id) {
                 window.location.href = '/game/tournaments/'+ tournament_id + '/progress/';
                 return;
             }
-            else {
-                window.location.href = '/game/lobby/';
-            }
+            // else {
+            //     window.location.href = '/game/lobby/';
+            // }
         }, 3000);
     }
 };
@@ -270,6 +336,11 @@ function draw() {
 		}
 		sendPaddlePosition();
 	}
+
+	if (ballX == paddleWidth && ballY >= paddle1Y && ballY <= paddle1Y + paddleHeight) //collision with left paddle happened
+		player1BallHits++;
+	else if (ballX == paddleWidth && ballY >= paddle2Y && ballY <= paddle2Y + paddleHeight) //collision with right paddle happened
+		player2BallHits++;
 
 	requestAnimationFrame(draw);
 }

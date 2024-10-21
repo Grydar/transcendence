@@ -1,0 +1,21 @@
+{% extends 'home.html' %}
+{% load static %}
+
+{% block title%}
+	Game stats
+{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+{% endblock %}
+
+{% block content%}
+	<h4>Game statistics</h4>
+	<br>
+	<p>Match duration: {{game.match_duration}}s</p>
+	<p>Times the ball was hit: {{game.total_ball_hits}}</p>
+	<p>{{game.player1.username}}'s score: {{player1Score}}</p>
+	<p>{{game.player2.username}}'s score: {{player2Score}}</p>
+	<br>
+	<p>Winner: {{game.winner}}</p>
+{% endblock %}
