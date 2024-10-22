@@ -59,21 +59,33 @@ def submit_stats(request, match_id):
         winner = data.get('winner')
         player1BallHits = data.get('player1BallHits')
         player2BallHits = data.get('player2BallHits')
-        totalBallHits = data.get('totalBallHits')
+        total_ball_hits = data.get('total_ball_hits')
         matchDuration = data.get('matchDuration')
-        # match_id = data.get('match_id')
         
-        # temp = GameStats.objects.get(match_id=match_id)
-        
-        game = GameStats.objects.create(
+        print(data)
+
+        if not all([player1Score, player2Score, winner, player1BallHits, player2BallHits, total_ball_hits, matchDuration]):
+            return JsonResponse({'status': 'error', 'message': 'Missing data fields'})
+
+        game = GameStats(
             player1=request.user,
             player2=User.objects.get(id=data.get('player2_id')),
             winner=winner,
-            total_ball_hits=totalBallHits,
-            match_duration=matchDuration,
+            total_ball_hits=total_ball_hits,
+            matchDuration=matchDuration,
             match_id=match_id
 		)
         
+        # game.save()
+        try:
+            game.save()
+            print(f"GameStats saved with ID: {game.id}")  # Debugging info
+        except Exception as e:
+            print(f"Error saving GameStats: {e}")
+        
+        game_from_db = GameStats.objects.get(match_id=game.match_id)
+        print(f"Retrieved game: {game_from_db}")  # This confirms the save
+		
         player1_stats = UserStats.objects.get(user=request.user)
         player2_stats = UserStats.objects.get(user=game.player2)
         
@@ -92,7 +104,6 @@ def submit_stats(request, match_id):
             
         player1_stats.save()
         player2_stats.save()
-        game.save()
 
         return JsonResponse({'status': 'success', "match_id": game.match_id})
     except Exception as e:

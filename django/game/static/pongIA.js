@@ -10,6 +10,7 @@ let paddle1Y = (canvas.height - paddleHeight) / 2;
 let paddle2Y = (canvas.height - paddleHeight) / 2;
 let ballX = canvas.width / 2;
 let ballY = canvas.height / 2;
+const constBallSpeedX = 5;
 let ballSpeedX = 5;
 let ballSpeedY = 3;
 
@@ -208,7 +209,13 @@ function draw() {
 	else if (draw.randomAI < 360)
 		moveAI(true);
 	else
+	{
 		draw.randomAI = 0;
+		if (ballSpeedX > 0)
+			ballSpeedX += 0.5;
+		else
+			ballSpeedX -= 0.5;
+	}
 
     requestAnimationFrame(draw);
 }
@@ -216,7 +223,11 @@ function draw() {
 function resetBall() {
     ballX = canvas.width / 2;
     ballY = canvas.height / 2;
-    ballSpeedX = -ballSpeedX; // Change direction
+	if (ballSpeedX > 0)
+		ballSpeedX = constBallSpeedX;
+	else
+		ballSpeedX = -constBallSpeedX;
+    // ballSpeedX = -ballSpeedX; // Change direction
     ballSpeedY = (Math.random() > 0.5 ? 3 : -3); // Randomize the Y direction
 }
 

@@ -79,9 +79,9 @@ class GameStats(models.Model):
     player2 = models.ForeignKey(User, related_name="game_player2", on_delete=models.CASCADE, null=True, blank=True)
     winner = models.ForeignKey(User, related_name="game_winner", on_delete=models.SET_NULL, null=True)
     match_id = models.IntegerField(default=0)
-    
-    # def match_duration(self):
-    #     return self.match_end_time - self.match_start_time
 
     def __str__(self):
-        return f"Game between {self.player1.username} and {self.player2.username}"
+        if self.player1 and self.player2:
+            return f"Game between {self.player1.username} and {self.player2.username}"
+        elif self.player1:
+            return f"Game between {self.player1.username} and AI"
