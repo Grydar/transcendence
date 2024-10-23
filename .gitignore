@@ -21,7 +21,7 @@ django/*/migrations/*
 !django/*/migrations/0001_initial.py
 
 # Ignore database data directory
-data/
+.data/
 
 # Environments
 .env
@@ -65,4 +65,3 @@ htmlcov/
 
 # JetBrains specific files
 .idea/
-.data
