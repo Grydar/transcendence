@@ -22,9 +22,6 @@ __pycache__/
 # Ignore database data directory
 data/
 
-# Ignore database data directory
-data/
-
 # Environments
 .env
 
