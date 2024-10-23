@@ -39,7 +39,10 @@ INSTALLED_APPS = [
     'users',
     'channels',
     'chat',
+<<<<<<< HEAD
     'security',
+=======
+>>>>>>> origin/main
 ]
 
 ASGI_APPLICATION = 'project.asgi.application'
@@ -85,20 +88,32 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+<<<<<<< HEAD
 
 client = hvac.Client(url='http://vault:8200', token='root-token')
 
 secrets = client.secrets.kv.read_secret_version(path='secret/django')
+=======
+>>>>>>> origin/main
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
+<<<<<<< HEAD
         'NAME': secrets['data']['data']['POSTGRES_DB'],
         'USER': secrets['data']['data']['POSTGRES_USER'],
         'PASSWORD': secrets['data']['data']['POSTGRES_PASSWORD'],
         'HOST': secrets['data']['data']['POSTGRES_HOST'],
         'PORT': secrets['data']['data']['POSTGRES_PORT'],
     }
+=======
+        'NAME': environ.get('POSTGRES_DB'),
+        'USER': environ.get('POSTGRES_USER'),
+        'PASSWORD': environ.get('POSTGRES_PASSWORD'),
+        'HOST': 'db',
+        'PORT': '',
+    },
+>>>>>>> origin/main
 }
 
 # Password validation
@@ -119,6 +134,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+<<<<<<< HEAD
 PASSWORD_HASHERS = [
    'django.contrib.auth.hashers.Argon2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
@@ -126,6 +142,8 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
 ]
 
+=======
+>>>>>>> origin/main
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 

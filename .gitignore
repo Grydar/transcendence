@@ -12,8 +12,15 @@ __pycache__/
 *.sqlite3
 
 # Media/static files
-media/
-static/
+# media/
+# static/
+
+# Ignorer tous les fichiers de migration sauf __init__.py
+*/migrations/*
+!*/migrations/__init__.py
+
+# Ignore database data directory
+data/
 
 # Ignore database data directory
 data/
@@ -60,3 +67,4 @@ htmlcov/
 
 # JetBrains specific files
 .idea/
+.data

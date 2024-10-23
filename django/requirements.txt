@@ -9,7 +9,11 @@ django-crispy-forms
 crispy-bootstrap5
 Pillow
 django-render-block
+<<<<<<< HEAD
 channels
 
 argon2-cffi
 hvac
+=======
+channels
+>>>>>>> origin/main

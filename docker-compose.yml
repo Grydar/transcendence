@@ -18,7 +18,10 @@ services:
       - "8000:8000"
     depends_on:
       - db
+<<<<<<< HEAD
       - vault
+=======
+>>>>>>> origin/main
     env_file: .env
     volumes:
       - ./django:/django
@@ -26,13 +29,19 @@ services:
     
   nginx:
     container_name: nginx
+<<<<<<< HEAD
     image: owasp/modsecurity-crs:nginx-alpine
+=======
+    build:
+      context: ./nginx
+>>>>>>> origin/main
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       - django
     volumes:
+<<<<<<< HEAD
       - ./nginx/certs/selfsigned.crt:/etc/nginx/conf/server.crt
       - ./nginx/certs/selfsigned.key:/etc/nginx/conf/server.key
       - ./nginx/conf/nginx.conf:/etc/nginx/templates/nginx.conf.template
@@ -52,3 +61,7 @@ services:
     command: vault server -dev
     volumes:
       - ./vault/logs:/vault/logs
+=======
+      - ./nginx/certs:/etc/nginx/certs
+    restart: unless-stopped
+>>>>>>> origin/main

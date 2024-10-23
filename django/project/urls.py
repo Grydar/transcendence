@@ -9,7 +9,10 @@ urlpatterns = [
     path('', include('home.urls')),
     path('chat/', include('chat.urls')),
     path('users/', include('users.urls')),
+<<<<<<< HEAD
     # path('', include('security.urls')),
+=======
+>>>>>>> origin/main
 ]
 
 # to access user uploaded images (profile picture)

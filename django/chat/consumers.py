@@ -23,6 +23,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
+<<<<<<< HEAD
         message = text_data_json["message"]
         username = text_data_json["username"]
         room_name = text_data_json["room_name"]
@@ -42,6 +43,51 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = event["message"]
         username = event["username"]
         await self.send(text_data=json.dumps({"message": message, "username": username}))
+=======
+        message_type = text_data_json.get("type", "chat_message")
+        
+        if message_type == "chat_message":
+            # Existing message handling
+            message = text_data_json["message"]
+            username = text_data_json["username"]
+            room_name = text_data_json["room_name"]
+
+            await self.save_message(message, username, room_name)
+
+            await self.channel_layer.group_send(
+                self.roomGroupName, {
+                    "type": "sendMessage",
+                    "message": message,
+                    "username": username,
+                    "room_name": room_name,
+                }
+            )
+        elif message_type == "game_invite":
+            # Since we're handling invites via the view, you may not need to handle this here
+            pass
+
+    async def game_invite(self, event):
+        sender = event['sender']
+        recipient = event['recipient']
+        party_id = event['party_id']
+
+        # Send the game invitation to the client
+        await self.send(text_data=json.dumps({
+            'type': 'game_invite',
+            'sender': sender,
+            'recipient': recipient,
+            'party_id': party_id
+        }))
+
+    async def sendMessage(self, event):
+        message = event["message"]
+        username = event["username"]
+        await self.send(text_data=json.dumps({
+            "type": "chat_message",
+            "message": message,
+            "username": username
+        }))
+>>>>>>> origin/main
     
     @sync_to_async
     def save_message(self, message, username, room_name):
