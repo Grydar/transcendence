@@ -2,11 +2,9 @@ services:
   db:
     image: postgres
     container_name: db
-    ports:
-        - "5432:5432"
     env_file: .env
     volumes:
-        - ./data/db:/var/lib/postgresql/data
+        - .data/db:/var/lib/postgresql/data
     restart: unless-stopped
   
   django:
@@ -14,8 +12,6 @@ services:
     build:
       context: ./django
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
     depends_on:
       - db
       - vault
@@ -42,12 +38,11 @@ services:
     container_name: vault
     build: 
       context: ./vault  # Use the Dockerfile from the ./vault directory
-    env_file:
-      - .env
+    env_file: .env
     cap_add:
       - IPC_LOCK
     entrypoint: /vault/entrypoint.sh  # This will use the script inside the container
     volumes:
       - ./vault/logs:/vault/logs  # Mount logs directory
     ports:
-      - "8200:8200"  # Expose port 8200 to access Vault UI/API
+      - "8200:8200"  # Expose the Vault port

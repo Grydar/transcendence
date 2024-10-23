@@ -50,11 +50,7 @@ Chat
                     {% endif %}
                     <img src="{{ i.profile.image.url }}" alt="User Image" class="user-image">
                     <span>{{ i.profile.user.username }}</span>
-<<<<<<< HEAD
                     <form id="create-room-form-{{ i.profile.user.id }}" action="{% url 'create_room' %}" method="post" class="user-form">
-=======
-                    <form id="create-room-form-{{ i.profile.user.id }}" action="{% url 'chat:create_room' %}" method="post" class="user-form">
->>>>>>> origin/main
                         {% csrf_token %}
                         <input type="hidden" name="name" value="">
                         <input type="hidden" name="slug" value="">

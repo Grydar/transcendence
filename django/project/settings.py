@@ -83,22 +83,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'project.wsgi.application'
 
+client = hvac.Client(url='http://vault:8200', token='roottoken')
 
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+# Read secrets from Vault using KV v2 API
+secrets = client.secrets.kv.v2.read_secret_version(path='django', mount_point='secret')
 
-client = hvac.Client(url='https://vault', token='root-token')
-
-secrets = client.secrets.kv.read_secret_version(path='secret/django')
-
+# Database configuration using secrets from Vault
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': secrets['data']['data']['POSTGRES_DB'],
-        'USER': secrets['data']['data']['POSTGRES_USER'],
-        'PASSWORD': secrets['data']['data']['POSTGRES_PASSWORD'],
-        'HOST': secrets['data']['data']['POSTGRES_HOST'],
-        'PORT': secrets['data']['data']['POSTGRES_PORT'],
+        'NAME': secrets['data']['data']['DB_NAME'],
+        'USER': secrets['data']['data']['DB_USER'],
+        'PASSWORD': secrets['data']['data']['DB_PASSWORD'],
+        'HOST': secrets['data']['data']['DB_HOST'],
+        'PORT': secrets['data']['data']['DB_PORT'],
     }
 }
 

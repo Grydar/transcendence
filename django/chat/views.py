@@ -5,14 +5,6 @@ from users.models import FriendList
 from django.http import JsonResponse
 from django.contrib.auth.models import User
 from users.models import Profile
-<<<<<<< HEAD
-=======
-from django.views.decorators.csrf import csrf_exempt
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
-from game.models import Party
-import json
->>>>>>> origin/main
 
 # Create your views here.
 @login_required
@@ -43,11 +35,7 @@ def room(request, slug):
     other_username = username2 if request.user.username == username1 else username1
     other_user = get_object_or_404(User, username=other_username)
     profile = get_object_or_404(Profile, user=other_user)
-<<<<<<< HEAD
     context = {"slug":slug, "room_name":room_name, 'messages':messages, 'user_id':request.user.id, 'profile':profile}
-=======
-    context = {"slug":slug, "room_name":room_name, 'messages':messages, 'user_id':request.user.id, 'profile':profile, 'other_user_id':other_user.id}
->>>>>>> origin/main
     return render(request, "chat/room.html", context)
 
 def create_room(request):
@@ -68,56 +56,7 @@ def create_room(request):
         if not existing_room:
             # Create a new room
             room = Room.objects.create(name=name, slug=room_slug, user1=user1, user2=user2)
-<<<<<<< HEAD
             return redirect('room', slug=room_slug)
         else:
             # Room already exists, redirect to the existing room
             return redirect('room', slug=room_slug)
-=======
-            return redirect('chat:room', slug=room_slug)
-        else:
-            # Room already exists, redirect to the existing room
-            return redirect('chat:room', slug=room_slug)
-
-@login_required
-@csrf_exempt  # Be cautious with csrf_exempt; ensure security
-def send_game_invite(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        room_slug = data.get('room_slug')
-        if not room_slug:
-            return JsonResponse({'status': 'error', 'message': 'Room slug not provided'})
-
-        # Get the usernames from the room slug
-        usernames = room_slug.split('_')
-        if len(usernames) != 2:
-            return JsonResponse({'status': 'error', 'message': 'Invalid room slug'})
-
-        sender = request.user
-        other_username = usernames[0] if usernames[1] == sender.username else usernames[1]
-        other_user = get_object_or_404(User, username=other_username)
-
-        # Create the party
-        party = Party.objects.create(
-            creator=sender,
-            num_players=2,
-            status='active'
-        )
-        party.participants.add(sender, other_user)
-
-        # Send the invitation via the channel layer
-        channel_layer = get_channel_layer()
-        room_group_name = f'chat_{room_slug}'
-        async_to_sync(channel_layer.group_send)(
-            room_group_name, {
-                'type': 'game_invite',
-                'sender': sender.username,
-                'recipient': other_user.username,
-                'party_id': party.id
-            }
-        )
-
-        return JsonResponse({'status': 'success', 'party_id': party.id})
-    else:
-        return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
->>>>>>> origin/main

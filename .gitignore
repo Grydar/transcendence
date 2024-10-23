@@ -1,5 +1,5 @@
 # Python bytecode and caches
-__pycache__/
+django/*/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -16,8 +16,9 @@ __pycache__/
 # static/
 
 # Ignorer tous les fichiers de migration sauf __init__.py
-*/migrations/*
-!*/migrations/__init__.py
+django/*/migrations/*
+!django/*/migrations/__init__.py
+!django/*/migrations/0001_initial.py
 
 # Ignore database data directory
 data/
