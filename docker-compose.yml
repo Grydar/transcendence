@@ -22,7 +22,6 @@ services:
     env_file: .env
     volumes:
       - ./django:/django
-    restart: unless-stopped
     
   nginx:
     container_name: nginx
@@ -41,14 +40,14 @@ services:
 
   vault:
     container_name: vault
-    image: hashicorp/vault:latest
-    ports:
-      - "8200:8200"
+    build: 
+      context: ./vault  # Use the Dockerfile from the ./vault directory
     env_file:
       - .env
     cap_add:
       - IPC_LOCK
-    entrypoint: vault kv put secret/django DB_NAME=POSTGRES_DB DB_USER=POSTGRES_USER DB_PASSWORD=POSTGRES_PASSWORD DB_HOST=POSTGRES_HOST DB_PORT=POSTGRES_PORT
-    command: vault server -dev
+    entrypoint: /vault/entrypoint.sh  # This will use the script inside the container
     volumes:
-      - ./vault/logs:/vault/logs
+      - ./vault/logs:/vault/logs  # Mount logs directory
+    ports:
+      - "8200:8200"  # Expose port 8200 to access Vault UI/API

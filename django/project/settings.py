@@ -2,6 +2,7 @@ from pathlib import Path
 from os import environ
 import os
 import sys
+import hvac
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -86,7 +87,7 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-client = hvac.Client(url='http://vault:8200', token='root-token')
+client = hvac.Client(url='https://vault', token='root-token')
 
 secrets = client.secrets.kv.read_secret_version(path='secret/django')
 
