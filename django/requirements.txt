@@ -12,3 +12,4 @@ django-render-block
 channels
 
 argon2-cffi
+hvac

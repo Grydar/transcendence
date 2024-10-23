@@ -86,17 +86,20 @@ WSGI_APPLICATION = 'project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+client = hvac.Client(url='http://vault:8200', token='root-token')
+
+secrets = client.secrets.kv.read_secret_version(path='secret/django')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': environ.get('POSTGRES_DB'),
-        'USER': environ.get('POSTGRES_USER'),
-        'PASSWORD': environ.get('POSTGRES_PASSWORD'),
-        'HOST': 'db',
-        'PORT': '',
-    },
+        'NAME': secrets['data']['data']['POSTGRES_DB'],
+        'USER': secrets['data']['data']['POSTGRES_USER'],
+        'PASSWORD': secrets['data']['data']['POSTGRES_PASSWORD'],
+        'HOST': secrets['data']['data']['POSTGRES_HOST'],
+        'PORT': secrets['data']['data']['POSTGRES_PORT'],
+    }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

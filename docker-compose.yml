@@ -18,6 +18,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - vault
     env_file: .env
     volumes:
       - ./django:/django
@@ -37,3 +38,17 @@ services:
       - ./nginx/conf/nginx.conf:/etc/nginx/templates/nginx.conf.template
       - ./nginx/conf/default.conf:/etc/nginx/templates/conf.d/default.conf.template
     restart: unless-stopped
+
+  vault:
+    container_name: vault
+    image: hashicorp/vault:latest
+    ports:
+      - "8200:8200"
+    env_file:
+      - .env
+    cap_add:
+      - IPC_LOCK
+    entrypoint: vault kv put secret/django DB_NAME=POSTGRES_DB DB_USER=POSTGRES_USER DB_PASSWORD=POSTGRES_PASSWORD DB_HOST=POSTGRES_HOST DB_PORT=POSTGRES_PORT
+    command: vault server -dev
+    volumes:
+      - ./vault/logs:/vault/logs
