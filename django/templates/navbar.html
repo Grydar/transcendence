@@ -4,9 +4,9 @@
     <div class="container-sm mt-2 mb-2">
         <div class="row_custom">
             {% if request.user.is_authenticated %}
-                <a class="logo" href="{% url 'home:welcome' %}" hx-target="#app-root">Transcendance</a>
+                <a class="logo" href="{% url 'home:welcome' %}" hx-target="#app-root">Transcendence</a>
             {% else %}
-                <a class="logo" href="{% url 'home:welcome' %}">Transcendance</a>
+                <a class="logo" href="{% url 'home:welcome' %}">Transcendence</a>
             {% endif %}
             <nav>
                 <ul class="nav_links" alt="logo">
@@ -18,8 +18,8 @@
                         <li><a href="{% url 'home:welcome' %}" hx-target="#app-root">Home</a></li>
                         <li><a href="{% url 'home:leaderboard' %}" hx-target="#app-root">Leaderboard</a></li>
                         <li><a href="{% url 'game:lobby' %}" hx-target="#app-root">Game</a></li>
-                        <li><a href="/chat/" hx-target="#app-root">Chat</a></li>
                         <li><a href="{% url 'game:tournament_list' %}" hx-target="#app-root">Tournaments</a></li>
+                        <li><a href="{% url 'chat:home' %}" hx-target="#app-root">Chat</a></li>
                         <li><a href="{% url 'users:profile' %}{{request.user.username}}" hx-target="#app-root">Profile</a></li>
                     {% endif %}
                 </ul>

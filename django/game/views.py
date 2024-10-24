@@ -21,12 +21,21 @@ def lobby(request):
         # Check if num_players is 1, otherwise proceed with form validation
         if num_players == 1:
             return render(request, 'game/game.html', {
-        		'party_id': 1,
-        		'match_id': 1,
-        		'tournament_id': 1,
-        		'user': request.user,
-        		'num_players': 1,
-    		})
+                'party_id': None,
+                'match_id': None,
+                'tournament_id': None,
+                'user': request.user,
+                'num_players': 1,
+            })
+        # Vérifier si num_players est 0 (jeu local)
+        elif num_players == 0:
+            return render(request, 'game/game.html', {
+                'party_id': None,
+                'match_id': None,
+                'tournament_id': None,
+                'user': request.user,
+                'num_players': 0,
+            })
         
         # If the form is valid, save the party
         if form.is_valid():

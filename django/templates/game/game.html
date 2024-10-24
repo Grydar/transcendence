@@ -21,7 +21,13 @@
 </script>
 
 <script>
-if (num_players === "1") {
+if (num_players === "0") {
+	// alert("PLAYING WITH AI");
+	const script = document.createElement('script');
+	script.src = "{% static 'pongLocal.js' %}";
+	script.defer = true;
+	document.head.appendChild(script);
+} else if (num_players === "1") {
 	// alert("PLAYING WITH AI");
 	const script = document.createElement('script');
 	script.src = "{% static 'pongIA.js' %}";

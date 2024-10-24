@@ -15,6 +15,8 @@ let ballSpeedY = 3;
 
 let upPressed = false;
 let downPressed = false;
+let wPressed = false;
+let sPressed = false;
 
 let gameStarted = false;
 
@@ -56,6 +58,10 @@ function keyDownHandler(e) {
         upPressed = true;
     } else if (e.key === 'ArrowDown') {
         downPressed = true;
+    } else if (e.key === 'w' || e.key === 'W') {
+        wPressed = true;
+    } else if (e.key === 's' || e.key === 'S') {
+        sPressed = true;
     }
 }
 
@@ -64,6 +70,10 @@ function keyUpHandler(e) {
         upPressed = false;
     } else if (e.key === 'ArrowDown') {
         downPressed = false;
+    } else if (e.key === 'w' || e.key === 'W') {
+        wPressed = false;
+    } else if (e.key === 's' || e.key === 'S') {
+        sPressed = false;
     }
 }
 
@@ -80,55 +90,9 @@ function startGame() {
     requestAnimationFrame(draw); // Start the game loop
 }
 
-function moveAI(random = false) {
-    let tempBallX = ballX;
-    let tempBallY = ballY;
-    let tempBallSpeedY = ballSpeedY;
-
-    // Predict the Y position of the ball when it reaches the AI paddle
-    let maxIterations = 1000; // Set a maximum number of iterations to prevent infinite loop
-    let iterations = 0;
-
-    while (tempBallX <= canvas.width - paddleWidth && iterations < maxIterations)
-	{
-        tempBallX += ballSpeedX;
-        tempBallY += tempBallSpeedY;
-
-        // Reverse ball Y direction when it hits top or bottom wall
-        if (tempBallY < 0 || tempBallY > canvas.height)
-            tempBallSpeedY = -tempBallSpeedY;
-        iterations++;
-    }
-
-    let predictedY = tempBallY;
-    let paddleCenterY = paddle2Y + paddleHeight / 2;
-
-	if (random === false)
-	{
-		if (paddleCenterY <= predictedY - 5)
-			paddle2Y += 5; // Move down
-		else if (paddleCenterY >= predictedY + 5)
-			paddle2Y -= 5; // Move up
-	}
-	else
-	{
-		if (paddleCenterY <= predictedY - 5)
-			paddle2Y -= 5;
-		else if (paddleCenterY >= predictedY + 5)
-			paddle2Y += 5;
-	}
-
-    // Prevent AI paddle from going off the screen
-    if (paddle2Y < 0)
-			paddle2Y = 0;
-    if (paddle2Y + paddleHeight > canvas.height)
-			paddle2Y = canvas.height - paddleHeight;
-}
-
-
 function updateScoreBoard() {
-    document.getElementById('leftScore').textContent = `${user} : ${score1}`;
-    document.getElementById('rightScore').textContent = `AI: ${score2}`;
+    document.getElementById('leftScore').textContent = `Player 1: ${score1}`;
+    document.getElementById('rightScore').textContent = `Player 2: ${score2}`;
 }
 
 function draw() {
@@ -166,23 +130,31 @@ function draw() {
         ballSpeedY = -ballSpeedY;
     }
 
-    // Ball collision with player paddle
-    if (ballX - ballRadius < paddleWidth && ballY > paddle1Y && ballY < paddle1Y + paddleHeight) {
+    // Ball collision with player 1 paddle
+    if (
+        ballX - ballRadius < paddleWidth &&
+        ballY > paddle1Y &&
+        ballY < paddle1Y + paddleHeight
+    ) {
         ballSpeedX = -ballSpeedX;
     }
 
-    // Ball collision with AI paddle
-    if (ballX + ballRadius > canvas.width - paddleWidth && ballY > paddle2Y && ballY < paddle2Y + paddleHeight) {
+    // Ball collision with player 2 paddle
+    if (
+        ballX + ballRadius > canvas.width - paddleWidth &&
+        ballY > paddle2Y &&
+        ballY < paddle2Y + paddleHeight
+    ) {
         ballSpeedX = -ballSpeedX;
     }
 
     // Ball goes off screen (left or right)
     if (ballX - ballRadius < 0) {
-        score2++; // AI scores
+        score2++; // Player 2 scores
         resetBall();
     }
     if (ballX + ballRadius > canvas.width) {
-        score1++; // Player scores
+        score1++; // Player 1 scores
         resetBall();
     }
 
@@ -195,25 +167,19 @@ function draw() {
         return;
     }
 
-    // Move player paddle based on key presses
-    if (upPressed && paddle1Y > 0) {
+    // Move player 1 paddle based on key presses (W and S)
+    if (wPressed && paddle1Y > 0) {
         paddle1Y -= 7;
-    } else if (downPressed && paddle1Y + paddleHeight < canvas.height) {
+    } else if (sPressed && paddle1Y + paddleHeight < canvas.height) {
         paddle1Y += 7;
     }
 
-	if (typeof draw.randomAI === 'undefined') {
-		draw.randomAI = 0;
-	}
-
-	draw.randomAI++;
-
-	if (draw.randomAI < 300)
-    	moveAI(false);
-	else if (draw.randomAI < 360)
-		moveAI(true);
-	else
-		draw.randomAI = 0;
+    // Move player 2 paddle based on key presses (Arrow Up and Arrow Down)
+    if (upPressed && paddle2Y > 0) {
+        paddle2Y -= 7;
+    } else if (downPressed && paddle2Y + paddleHeight < canvas.height) {
+        paddle2Y += 7;
+    }
 
     requestAnimationFrame(draw);
 }
@@ -222,12 +188,13 @@ function resetBall() {
     ballX = canvas.width / 2;
     ballY = canvas.height / 2;
     ballSpeedX = -ballSpeedX; // Change direction
-    ballSpeedY = (Math.random() > 0.5 ? 3 : -3); // Randomize the Y direction
+    ballSpeedY = Math.random() > 0.5 ? 3 : -3; // Randomize the Y direction
 }
 
 function gameOver() {
     gameStarted = false;
-    gameOverMessage.textContent = score1 >= 5 ? 'Player Wins!' : 'AI Wins!';
+    gameOverMessage.textContent =
+        score1 >= 5 ? 'Player 1 Wins!' : 'Player 2 Wins!';
     gameOverMessage.style.display = 'block';
 
     // Apply styles to center the game over message
@@ -243,7 +210,7 @@ function gameOver() {
     gameOverMessage.style.color = 'white';
 
     // Optionally redirect or reset the game
-    setTimeout(function() {
+    setTimeout(function () {
         window.location.href = '/game/lobby/';
     }, 3000);
 }

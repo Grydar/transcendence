@@ -16,6 +16,7 @@
 		
 		<label for="num_players">Select the number of players:</label>
 		<select id="num_players" name="num_players">
+			<option value="0">Play Local</option>
 			<option value="1">Play with AI</option>
 			<option value="2">2 Players</option>
 			<option value="3">3 Players</option>
@@ -32,8 +33,13 @@
 			const num_players = document.getElementById('num_players').value;
 	
 			// Conditional logic to load the correct game script
-			if (num_players === "1") {
+			if (num_players === "0") {
 				// alert("PLAYING WITH AI");
+				const script = document.createElement('script');
+				script.src = "{% static 'pongLocal.js' %}";
+				script.defer = true;
+				document.head.appendChild(script);
+			} else if (num_players === "1") {
 				const script = document.createElement('script');
 				script.src = "{% static 'pongIA.js' %}";
 				script.defer = true;

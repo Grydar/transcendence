@@ -25,7 +25,7 @@ load_dotenv()
 
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
-REDIRECT_URI = 'http://localhost:8000/users/callback/'
+REDIRECT_URI = 'https://localhost/users/callback/'
 
 # Define the FROMLOGIN and FROMSIGNUP variables
 FROMLOGIN = 'd56b699830e77ba53855679cb1d252da'
@@ -430,11 +430,19 @@ def remove_friend(request) -> HttpResponse:
 def blocking(request) -> HttpResponse:
     current_user = request.user
     blocklist = current_user.profile.blocklist
-    action = request.GET.get("action")
+    action = request.GET.get("action") or request.POST.get("action")
     payload = {}
 
     if current_user.is_authenticated:
-        user_id = request.GET.get("user_id")
+        if request.method == "POST":
+            try:
+                data = json.loads(request.body)
+                user_id = data.get("user_id")  # Assurez-vous de récupérer le user_id correctement du body
+                action = data.get("action")
+            except json.JSONDecodeError:
+                user_id = None
+        else:
+            user_id = request.GET.get("user_id")
         if user_id:
             target_user = User.objects.get(pk=user_id)
 

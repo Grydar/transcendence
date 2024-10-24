@@ -4,7 +4,7 @@ import requests
 
 CLIENT_ID = os.environ.get('CLIENT_ID')
 CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
-REDIRECT_URI = 'http://localhost:8000/users/callback/'
+REDIRECT_URI = 'https://localhost/users/callback/'
 
 def get_friend_request_or_false(sender, receiver):
     try:
